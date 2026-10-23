@@ -1,0 +1,39 @@
+---
+config:
+  flowchart:
+    curve: linear
+---
+graph TD;
+	__start__([<p>__start__</p>]):::first
+	orchestrator(orchestrator)
+	intake(intake)
+	rules(rules)
+	computation(computation)
+	review(review)
+	dispatch(dispatch)
+	extraction(extraction)
+	aggregate(aggregate)
+	human(human)
+	__end__([<p>__end__</p>]):::last
+	__start__ --> orchestrator;
+	aggregate --> orchestrator;
+	computation --> orchestrator;
+	dispatch -.-> aggregate;
+	dispatch -.-> extraction;
+	extraction --> aggregate;
+	human --> orchestrator;
+	intake --> orchestrator;
+	orchestrator -. &nbsp;end&nbsp; .-> __end__;
+	orchestrator -.-> computation;
+	orchestrator -.-> dispatch;
+	orchestrator -.-> human;
+	orchestrator -.-> intake;
+	orchestrator -.-> review;
+	orchestrator -.-> rules;
+	review --> orchestrator;
+	rules --> orchestrator;
+	orchestrator -.-> orchestrator;
+	classDef default fill:#f2f0ff,line-height:1.2
+	classDef first fill-opacity:0
+	classDef last fill:#bfb6fc
+

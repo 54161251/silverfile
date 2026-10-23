@@ -1,0 +1,7 @@
+{
+  "escalation_id": "esc_0001",
+  "option": "verified_continue",
+  "note": "Synthetic example only: staff confirmed the account with the fictional taxpayer.",
+  "resolved_by": "demo_staff",
+  "overrides": {}
+}

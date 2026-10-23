@@ -39,7 +39,7 @@ class Sessions:
     def resume(self, thread_id, payload):
         config = self.config(thread_id)
         snapshot = self.graph.get_state(config)
-        if not snapshot.next:
+        if not any(task.interrupts for task in snapshot.tasks):
             raise ValueError("Session is not waiting for input")
         # Validate before passing Command: raw input must not enter a checkpoint first.
         validate_intake(payload)

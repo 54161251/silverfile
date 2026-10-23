@@ -20,6 +20,12 @@ Implementation is still pending. Owners follow TEAM.md and the team's Google Doc
 - [ ] Define state, typed document records, provenance, and agent return contracts.
 - [ ] Agree on dependency versions and local setup.
 
+P1 update: pinned runtime dependencies, five shared models, orchestration, parallel
+aggregation, SQLite resume, validated staff interrupts, loop guards and their local tests
+are implemented. The offline skeleton is runnable. Full integration, Python 3.11/CI,
+Docker verification, branch protection and supplied-course-file discovery remain pending.
+See docs/IMPLEMENTATION_NOTES.md; unchecked application milestones below remain incomplete.
+
 ## Milestone 2 — One complete clean case
 - [ ] Implement intake, saved sessions, and fake-SSN validation.
 - [ ] Implement extraction from a synthetic W-2 image.

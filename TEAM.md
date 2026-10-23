@@ -12,7 +12,7 @@ Based on the named assignments in the team's [AI Project document](https://docs.
 | P6 | Ziling | Review + QA/DevOps | MLOps/DevOps | Review agent, CI, test harness, Docker, grader simulation |
 | P7 | David | Dashboard + demo | To confirm with instructor | Staff dashboard, HITL resolution, form with provenance, demo video |
 
-Six agents remain required; the dashboard is a separate application workstream, not a seventh agent. Each member commits their own work and records AI assistance. P1 coordinates shared contracts and merges.
+Six agents remain required; the dashboard is a separate application workstream, not a seventh agent. Each member commits their own work and records AI assistance. P1 coordinates shared contracts and integration; all collaborators may merge their own tested PRs without major unresolved issues (owner update, October 23).
 
 The assignment page specifies six-person teams. The actual team has seven members; instructor approval of the team size and P7's graded focus area is not recorded here.
 
