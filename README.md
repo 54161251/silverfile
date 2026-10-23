@@ -2,7 +2,7 @@
 
 A collaborative starter repository for the team's seven-person SilverFile project: six agents plus a dashboard/demo workstream.
 
-**Status: planning scaffold. The tax application is not implemented yet.**
+**Status: P1 integration runtime and P5 Rules agent implemented. An offline walking skeleton runs; the complete tax application is still in development.**
 
 ## Start here
 
@@ -37,7 +37,7 @@ flowchart TD
   O -->|Loop limit reached| S[Stop for human review]
 ```
 
-This is a proposed architecture, not evidence of implemented functionality. Intake is the only agent that converses with the taxpayer; the orchestrator only routes work.
+The P1 routing topology is implemented; the offline demo still uses placeholder adapters for unfinished workstreams. Intake is the only agent that converses with the taxpayer; the orchestrator only routes work.
 
 ## Repository map
 
@@ -54,7 +54,33 @@ This is a proposed architecture, not evidence of implemented functionality. Inta
 
 ## Running the project
 
-There is no runnable application yet. Python/LangGraph is the proposed implementation approach. The team must add and verify dependency versions, a real entry point, environment configuration, and exact run commands before submission.
+Use Python 3.11 (team target). Local checks so far used Python 3.13.
+
+```sh
+python -m venv .venv
+```
+
+Activate with `.venv\Scripts\Activate.ps1` on Windows PowerShell or `source .venv/bin/activate` on macOS/Linux. Then:
+
+```sh
+python -m pip install -r requirements.txt
+python -m pytest -q
+python run.py start --demo --thread-id first-demo
+```
+
+The demo uses synthetic structured documents, the real Rules agent, and placeholder
+Intake/Extraction/Computation/Review adapters. It ends as **scaffold_complete**, not a
+completed tax return. No API key is needed. See [persistent human-review walkthrough](demo/P1_WALKTHROUGH.md)
+and [integration handoff](docs/IMPLEMENTATION_NOTES.md).
+
+For the eventual production agents, each module exposes `run(state) -> dict` under
+`src/agents/`. `python run.py start --input path/to/synthetic-input.json` deliberately
+fails until the missing adapters are supplied. Runtime SQLite files live under ignored
+`runtime/`; use the same `--db` and `--thread-id` for resume. `SILVERFILE_DB` optionally
+sets the database path. P1 uses no API credentials; model configuration belongs to the
+agent owners.
+
+![P1 graph overview](docs/graph.png)
 
 ## Acceptance targets
 
