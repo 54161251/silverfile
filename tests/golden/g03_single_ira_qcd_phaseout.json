@@ -1,0 +1,78 @@
+{
+  "name": "g03_single_ira_qcd_phaseout",
+  "description": "Single, 70. IRA distribution 120,000 with 10,000 QCD; dividends. Senior deduction partly phased out.",
+  "state": {
+    "intake": {
+      "filing_status": "single",
+      "taxpayer": {
+        "blind": false
+      }
+    },
+    "user_inputs": {},
+    "scope": {
+      "in_scope": true
+    },
+    "filing_status_validated": "single",
+    "eligibility": {
+      "form_1040sr_eligible": true,
+      "taxpayer_65_or_older": true,
+      "spouse_65_or_older": false,
+      "senior_deduction_qualifiers": [
+        "taxpayer"
+      ],
+      "missing": []
+    },
+    "box_count_12d": 1,
+    "documents": [
+      {
+        "doc_id": "r_ira",
+        "form": "1099-R",
+        "boxes": {
+          "1": 120000,
+          "2a": 120000,
+          "4": 20000,
+          "ira_sep_simple": true,
+          "qcd_amount": 10000
+        }
+      },
+      {
+        "doc_id": "div_1",
+        "form": "1099-DIV",
+        "boxes": {
+          "1a": 5000,
+          "1b": 3000,
+          "4": 0
+        }
+      }
+    ]
+  },
+  "expected_nonzero": {
+    "3a": 3000,
+    "3b": 5000,
+    "4a": 120000,
+    "4b": 110000,
+    "9": 115000,
+    "11a": 115000,
+    "12d": 1,
+    "12e": 17750,
+    "13b": 3600,
+    "14": 21350,
+    "15": 93650,
+    "16": 15517,
+    "18": 15517,
+    "22": 15517,
+    "24": 15517,
+    "25b": 20000,
+    "25d": 20000,
+    "33": 20000,
+    "34": 4483
+  },
+  "hand_derivation": [
+    "4a = 120,000; 4b = 120,000 - 10,000 QCD = 110,000; AGI = 110,000 + 5,000 = 115,000",
+    "Senior deduction = 6,000 - 6% x (115,000 - 75,000) = 3,600",
+    "14 = 17,750 + 3,600 = 21,350; 15 = 93,650",
+    "Tax = 1,192.50 + 4,386.00 + 9,938.50 = 15,517",
+    "Refund = 20,000 - 15,517 = 4,483"
+  ],
+  "verification": "AI-derived and cross-checked against tests/oracle.py. P2 must re-verify in an independent spreadsheet (R12) before the demo; see docs/P2_COMPUTATION.md."
+}

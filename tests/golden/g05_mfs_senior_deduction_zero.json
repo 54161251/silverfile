@@ -1,0 +1,80 @@
+{
+  "name": "g05_mfs_senior_deduction_zero",
+  "description": "MFS (did not live with spouse), 67. Rules gives no senior-deduction qualifier for MFS, so 13b is 0. SSA benefits taxed using the 25,000 base.",
+  "state": {
+    "intake": {
+      "filing_status": "mfs",
+      "taxpayer": {
+        "blind": false
+      },
+      "mfs_lived_with_spouse": false
+    },
+    "user_inputs": {},
+    "scope": {
+      "in_scope": true
+    },
+    "filing_status_validated": "mfs",
+    "eligibility": {
+      "form_1040sr_eligible": true,
+      "taxpayer_65_or_older": true,
+      "spouse_65_or_older": false,
+      "senior_deduction_qualifiers": [],
+      "missing": []
+    },
+    "box_count_12d": 1,
+    "documents": [
+      {
+        "doc_id": "w2_1",
+        "form": "W-2",
+        "boxes": {
+          "1": 30000,
+          "2": 2000
+        }
+      },
+      {
+        "doc_id": "int_1",
+        "form": "1099-INT",
+        "boxes": {
+          "1": 500,
+          "3": 100
+        }
+      },
+      {
+        "doc_id": "ssa_1",
+        "form": "SSA-1099",
+        "boxes": {
+          "5": 10000,
+          "6": 0
+        }
+      }
+    ]
+  },
+  "expected_nonzero": {
+    "1a": 30000,
+    "1z": 30000,
+    "2b": 600,
+    "6a": 10000,
+    "6b": 5860,
+    "9": 36460,
+    "11a": 36460,
+    "12d": 1,
+    "12e": 17350,
+    "14": 17350,
+    "15": 19110,
+    "16": 2055,
+    "18": 2055,
+    "22": 2055,
+    "24": 2055,
+    "25a": 2000,
+    "25d": 2000,
+    "33": 2000,
+    "37": 55
+  },
+  "hand_derivation": [
+    "Other income 30,000 + 600 = 30,600; provisional = 5,000 + 30,600 = 35,600",
+    "50% tier = min(5,000, 0.5 x min(10,600, 9,000)) = 4,500; 85% tier = 0.85 x (35,600 - 34,000) = 1,360; 6b = min(5,860, 8,500) = 5,860",
+    "AGI 36,460; 13b = 0 (MFS has no qualifier); 12e = 15,750 + 1 x 1,600 = 17,350; 15 = 19,110",
+    "Tax = 1,192.50 + 12% x 7,185 = 862.20 -> 2,054.70, rounds to 2,055; withholding 2,000; owe 55"
+  ],
+  "verification": "AI-derived and cross-checked against tests/oracle.py. P2 must re-verify in an independent spreadsheet (R12) before the demo; see docs/P2_COMPUTATION.md."
+}

@@ -1,0 +1,75 @@
+{
+  "name": "g06_qss_blind_unverified_confirmed",
+  "description": "Qualifying surviving spouse, 66, blind (2 boxes). W-2 box 1 was low-confidence (extracted 25,200); taxpayer confirmed 52,000 via user_inputs['w2_1.1'].",
+  "state": {
+    "intake": {
+      "filing_status": "qss",
+      "taxpayer": {
+        "blind": true
+      }
+    },
+    "user_inputs": {
+      "w2_1.1": 52000
+    },
+    "scope": {
+      "in_scope": true
+    },
+    "filing_status_validated": "qss",
+    "eligibility": {
+      "form_1040sr_eligible": true,
+      "taxpayer_65_or_older": true,
+      "spouse_65_or_older": false,
+      "senior_deduction_qualifiers": [
+        "taxpayer"
+      ],
+      "missing": []
+    },
+    "box_count_12d": 2,
+    "documents": [
+      {
+        "doc_id": "w2_1",
+        "form": "W-2",
+        "boxes": {
+          "1": 25200,
+          "2": 5000
+        },
+        "unverified": [
+          "1"
+        ],
+        "confidence": {
+          "1": 0.6,
+          "2": 0.99
+        }
+      }
+    ]
+  },
+  "expected_nonzero": {
+    "1a": 52000,
+    "1z": 52000,
+    "9": 52000,
+    "11a": 52000,
+    "12d": 2,
+    "12e": 34700,
+    "13b": 6000,
+    "14": 40700,
+    "15": 11300,
+    "16": 1130,
+    "18": 1130,
+    "22": 1130,
+    "24": 1130,
+    "25a": 5000,
+    "25d": 5000,
+    "33": 5000,
+    "34": 3870
+  },
+  "expect_source_confirmed": {
+    "1a": "w2_1"
+  },
+  "hand_derivation": [
+    "The extracted 25,200 is ignored; the confirmed 52,000 is used and marked confirmed_by user_input",
+    "12d = 1 (age) + 1 (blind) = 2; 12e = 31,500 + 2 x 1,600 = 34,700",
+    "13b = 6,000 (AGI under 75,000); 14 = 40,700; 15 = 11,300",
+    "Tax (joint schedule) = 10% x 11,300 = 1,130; refund = 5,000 - 1,130 = 3,870"
+  ],
+  "verification": "AI-derived and cross-checked against tests/oracle.py. P2 must re-verify in an independent spreadsheet (R12) before the demo; see docs/P2_COMPUTATION.md."
+}

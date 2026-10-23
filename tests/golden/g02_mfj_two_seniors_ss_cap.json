@@ -1,0 +1,121 @@
+{
+  "name": "g02_mfj_two_seniors_ss_cap",
+  "description": "MFJ, both 65+, spouse blind (3 boxes). Wages, pension, interest with tax-exempt part, dividends, two SSA-1099s hit the 85% cap. Estimated payment 1,000.",
+  "state": {
+    "intake": {
+      "filing_status": "mfj",
+      "taxpayer": {
+        "blind": false
+      },
+      "spouse": {
+        "blind": true
+      }
+    },
+    "user_inputs": {
+      "26": 1000
+    },
+    "scope": {
+      "in_scope": true
+    },
+    "filing_status_validated": "mfj",
+    "eligibility": {
+      "form_1040sr_eligible": true,
+      "taxpayer_65_or_older": true,
+      "spouse_65_or_older": true,
+      "senior_deduction_qualifiers": [
+        "taxpayer",
+        "spouse"
+      ],
+      "missing": []
+    },
+    "box_count_12d": 3,
+    "documents": [
+      {
+        "doc_id": "w2_1",
+        "form": "W-2",
+        "boxes": {
+          "1": 40000,
+          "2": 3000
+        }
+      },
+      {
+        "doc_id": "r_1",
+        "form": "1099-R",
+        "boxes": {
+          "1": 30000,
+          "2a": 30000,
+          "4": 2000,
+          "ira_sep_simple": false
+        }
+      },
+      {
+        "doc_id": "div_1",
+        "form": "1099-DIV",
+        "boxes": {
+          "1a": 2000,
+          "1b": 1500
+        }
+      },
+      {
+        "doc_id": "int_1",
+        "form": "1099-INT",
+        "boxes": {
+          "1": 3000,
+          "8": 500
+        }
+      },
+      {
+        "doc_id": "ssa_1",
+        "form": "SSA-1099",
+        "boxes": {
+          "5": 18000
+        }
+      },
+      {
+        "doc_id": "ssa_2",
+        "form": "SSA-1099",
+        "boxes": {
+          "5": 12000
+        }
+      }
+    ]
+  },
+  "expected_nonzero": {
+    "1a": 40000,
+    "1z": 40000,
+    "2a": 500,
+    "2b": 3000,
+    "3a": 1500,
+    "3b": 2000,
+    "5a": 30000,
+    "5b": 30000,
+    "6a": 30000,
+    "6b": 25500,
+    "9": 100500,
+    "11a": 100500,
+    "12d": 3,
+    "12e": 36300,
+    "13b": 12000,
+    "14": 48300,
+    "15": 52200,
+    "16": 5787,
+    "18": 5787,
+    "22": 5787,
+    "24": 5787,
+    "25a": 3000,
+    "25b": 2000,
+    "25d": 5000,
+    "26": 1000,
+    "33": 6000,
+    "34": 213
+  },
+  "hand_derivation": [
+    "Other income 40,000 + 3,000 + 2,000 + 30,000 = 75,000; provisional = 15,000 + 75,000 + 500 = 90,500",
+    "MFJ: base 32,000, 85% threshold 44,000; 50% tier = min(15,000, 0.5 x min(58,500, 12,000)) = 6,000; 85% tier = 0.85 x 46,500 = 39,525; sum 45,525 > cap 0.85 x 30,000 = 25,500 so 6b = 25,500",
+    "AGI 100,500; senior deduction 2 x 6,000 = 12,000 (AGI under 150,000)",
+    "12d = 3: 12e = 31,500 + 3 x 1,600 = 36,300; 14 = 48,300; 15 = 52,200",
+    "Tax = 10% x 23,850 + 12% x 28,350 = 2,385 + 3,402 = 5,787",
+    "Payments 3,000 + 2,000 + 1,000 = 6,000; refund 213"
+  ],
+  "verification": "AI-derived and cross-checked against tests/oracle.py. P2 must re-verify in an independent spreadsheet (R12) before the demo; see docs/P2_COMPUTATION.md."
+}
