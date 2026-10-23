@@ -1,13 +1,13 @@
 # SilverFile — Team Workspace
 
-A collaborative starter repository for a six-person multi-agent tax preparation project.
+A collaborative starter repository for the team's seven-person SilverFile project: six agents plus a dashboard/demo workstream.
 
 **Status: planning scaffold. The tax application is not implemented yet.**
 
 ## Start here
 
-1. Add your name and GitHub username to [TEAM.md](TEAM.md).
-2. Choose a specialization and agree on a first task in [TASKS.md](TASKS.md).
+1. Check your assigned workstream in [TEAM.md](TEAM.md) and provide your GitHub username to the repository owner.
+2. Follow the individual schedule in the [team planning document](https://docs.google.com/document/d/1tkAG7Xk9ocj3Wmg04FzHj_xkaeI4_IxfM0N6yviZj9s/edit?tab=t.0) and milestones in [TASKS.md](TASKS.md).
 3. Read [CONTRIBUTING.md](CONTRIBUTING.md) before editing.
 4. Agree on the shared interfaces in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 

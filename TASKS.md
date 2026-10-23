@@ -1,9 +1,21 @@
 # Implementation Backlog
 
-All items are initially unassigned and incomplete. Add an owner and create an issue when work begins.
+Implementation is still pending. Owners follow TEAM.md and the team's Google Doc:
+
+| Owner | Workstream |
+|---|---|
+| P1 Kaiwen | Contracts, orchestration, persistence, routing, merging, loop protection |
+| P2 Jad | MCP calculations, golden returns, report, AI disclosure |
+| P3 Zimo | Intake, memory, accessibility, context metrics |
+| P4 Christina | Extraction, security, fixtures, demo inputs |
+| P5 Lluc | Eligibility, cited rules, escalation decisions and tests |
+| P6 Ziling | Audit, QA, CI, Docker, grader simulation |
+| P7 David | Dashboard, human-resolution UI, form/provenance display, video |
 
 ## Milestone 1 — Agree on interfaces
-- [ ] Fill in TEAM.md and assign reviewers.
+- [x] Record all seven named workstreams in TEAM.md.
+- [ ] Collect GitHub usernames and agree on reviewers.
+- [ ] Confirm instructor approval of seven-person team size and P7's graded focus area.
 - [ ] Locate supplied tax_math tools and reference corpus; resolve open questions.
 - [ ] Define state, typed document records, provenance, and agent return contracts.
 - [ ] Agree on dependency versions and local setup.
