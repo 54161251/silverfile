@@ -1,0 +1,75 @@
+{
+  "name": "g04_hoh_pension_half_dollar_credits",
+  "description": "Head of household, 65+. Non-IRA pension, interest. Tax is exactly 717.50 (rounds up to 718). Credits and other taxes typed in.",
+  "state": {
+    "intake": {
+      "filing_status": "hoh",
+      "taxpayer": {
+        "blind": false
+      }
+    },
+    "user_inputs": {
+      "20": 200,
+      "23": 100
+    },
+    "scope": {
+      "in_scope": true
+    },
+    "filing_status_validated": "hoh",
+    "eligibility": {
+      "form_1040sr_eligible": true,
+      "taxpayer_65_or_older": true,
+      "spouse_65_or_older": false,
+      "senior_deduction_qualifiers": [
+        "taxpayer"
+      ],
+      "missing": []
+    },
+    "box_count_12d": 1,
+    "documents": [
+      {
+        "doc_id": "r_pen",
+        "form": "1099-R",
+        "boxes": {
+          "1": 40000,
+          "2a": 38000,
+          "ira_sep_simple": false
+        }
+      },
+      {
+        "doc_id": "int_1",
+        "form": "1099-INT",
+        "boxes": {
+          "1": 800
+        }
+      }
+    ]
+  },
+  "expected_nonzero": {
+    "2b": 800,
+    "5a": 40000,
+    "5b": 38000,
+    "9": 38800,
+    "11a": 38800,
+    "12d": 1,
+    "12e": 25625,
+    "13b": 6000,
+    "14": 31625,
+    "15": 7175,
+    "16": 718,
+    "18": 718,
+    "20": 200,
+    "21": 200,
+    "22": 518,
+    "23": 100,
+    "24": 618,
+    "37": 618
+  },
+  "hand_derivation": [
+    "AGI = 38,000 + 800 = 38,800",
+    "12e = 23,625 + 2,000 = 25,625; 13b = 6,000; 14 = 31,625; 15 = 7,175",
+    "Tax = 10% x 7,175 = 717.50, rounds half up to 718",
+    "21 = 0 + 200; 22 = 718 - 200 = 518; 24 = 518 + 100 = 618; owe 618"
+  ],
+  "verification": "AI-derived and cross-checked against tests/oracle.py. P2 must re-verify in an independent spreadsheet (R12) before the demo; see docs/P2_COMPUTATION.md."
+}

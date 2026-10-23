@@ -1,0 +1,82 @@
+{
+  "name": "g01_single_ss_50pct",
+  "description": "Single, 66. W-2 20,000; 1099-INT 1,200; SSA 24,000. Social Security in the 50% tier.",
+  "state": {
+    "intake": {
+      "filing_status": "single",
+      "taxpayer": {
+        "blind": false
+      }
+    },
+    "user_inputs": {},
+    "scope": {
+      "in_scope": true
+    },
+    "filing_status_validated": "single",
+    "eligibility": {
+      "form_1040sr_eligible": true,
+      "taxpayer_65_or_older": true,
+      "spouse_65_or_older": false,
+      "senior_deduction_qualifiers": [
+        "taxpayer"
+      ],
+      "missing": []
+    },
+    "box_count_12d": 1,
+    "documents": [
+      {
+        "doc_id": "w2_1",
+        "form": "W-2",
+        "boxes": {
+          "1": 20000,
+          "2": 1500
+        }
+      },
+      {
+        "doc_id": "int_1",
+        "form": "1099-INT",
+        "boxes": {
+          "1": 1200
+        }
+      },
+      {
+        "doc_id": "ssa_1",
+        "form": "SSA-1099",
+        "boxes": {
+          "5": 24000,
+          "6": 0
+        }
+      }
+    ]
+  },
+  "expected_nonzero": {
+    "1a": 20000,
+    "1z": 20000,
+    "2b": 1200,
+    "6a": 24000,
+    "6b": 4100,
+    "9": 25300,
+    "11a": 25300,
+    "12d": 1,
+    "12e": 17750,
+    "13b": 6000,
+    "14": 23750,
+    "15": 1550,
+    "16": 155,
+    "18": 155,
+    "22": 155,
+    "24": 155,
+    "25a": 1500,
+    "25d": 1500,
+    "33": 1500,
+    "34": 1345
+  },
+  "hand_derivation": [
+    "Provisional income = 12,000 (half of benefits) + 21,200 = 33,200; base 25,000; excess 8,200 (under the 9,000 width)",
+    "6b = min(12,000, 0.5 x 8,200) = 4,100; 85% cap is 20,400",
+    "AGI 25,300 (below 75,000: senior deduction 6,000 in full)",
+    "12e = 15,750 + 2,000 = 17,750; 14 = 23,750; 15 = 1,550; tax = 10% x 1,550 = 155",
+    "Refund = 1,500 - 155 = 1,345"
+  ],
+  "verification": "AI-derived and cross-checked against tests/oracle.py. P2 must re-verify in an independent spreadsheet (R12) before the demo; see docs/P2_COMPUTATION.md."
+}

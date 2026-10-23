@@ -1,0 +1,52 @@
+{
+  "name": "g07_blocked_low_confidence_box",
+  "description": "Same return as g06 but the taxpayer has not confirmed the low-confidence W-2 box 1. Computation must refuse and say exactly which box.",
+  "state": {
+    "intake": {
+      "filing_status": "qss",
+      "taxpayer": {
+        "blind": true
+      }
+    },
+    "user_inputs": {},
+    "scope": {
+      "in_scope": true
+    },
+    "filing_status_validated": "qss",
+    "eligibility": {
+      "form_1040sr_eligible": true,
+      "taxpayer_65_or_older": true,
+      "spouse_65_or_older": false,
+      "senior_deduction_qualifiers": [
+        "taxpayer"
+      ],
+      "missing": []
+    },
+    "box_count_12d": 2,
+    "documents": [
+      {
+        "doc_id": "w2_1",
+        "form": "W-2",
+        "boxes": {
+          "1": 25200,
+          "2": 5000
+        },
+        "unverified": [
+          "1"
+        ],
+        "confidence": {
+          "1": 0.6,
+          "2": 0.99
+        }
+      }
+    ]
+  },
+  "expected_nonzero": {},
+  "expected_open_questions_contain": [
+    "documents.w2_1.boxes.1"
+  ],
+  "hand_derivation": [
+    "No partial return: lines must be empty and open_questions non-empty so the orchestrator routes back to Intake"
+  ],
+  "verification": "AI-derived and cross-checked against tests/oracle.py. P2 must re-verify in an independent spreadsheet (R12) before the demo; see docs/P2_COMPUTATION.md."
+}

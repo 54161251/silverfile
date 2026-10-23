@@ -26,11 +26,13 @@ are implemented. The offline skeleton is runnable. Full integration, Python 3.11
 Docker verification, branch protection and supplied-course-file discovery remain pending.
 See docs/IMPLEMENTATION_NOTES.md; unchecked application milestones below remain incomplete.
 
+P2 update (Oct 23): tax_math functions, the silverfile-tax-math MCP server, the Computation agent (all 41 lines with provenance), seven golden returns and their tests are implemented (src/tools/, src/agents/computation.py, tests/). Interface and open agreements with P3, P4 and P5 are in docs/P2_COMPUTATION.md. Still open for P2: re-derive the goldens in a spreadsheet (R12), report paragraph (R21), and compile the final AI disclosure from the individual logs (R19).
+
 ## Milestone 2 — One complete clean case
 - [ ] Implement intake, saved sessions, and fake-SSN validation.
 - [ ] Implement extraction from a synthetic W-2 image.
 - [ ] Implement cited eligibility and scope checks.
-- [ ] Implement required calculations through deterministic MCP tools.
+- [x] Implement required calculations through deterministic MCP tools.
 - [ ] Generate a populated draft 1040-SR and inspectable provenance.
 - [ ] Implement an independent audit agent and conditional orchestration.
 - [ ] Provide a basic employee dashboard.
