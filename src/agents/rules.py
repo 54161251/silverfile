@@ -16,6 +16,8 @@ lands; they are listed in docs/p5_rules_interface.md. Rename them here, in one p
 """
 from __future__ import annotations
 
+import hashlib
+import json
 import re
 from datetime import date, datetime
 from zoneinfo import ZoneInfo
@@ -158,7 +160,8 @@ def _check_filing_status(intake: dict, d: _Decisions) -> str | None:
     anchor = "filing-status"
 
     if spouse and spouse.get("date_of_death"):
-        d.escalate("E5", "Spouse died in 2025 or earlier", ["intake.spouse.date_of_death"],
+        d.escalate("E5", "Spouse died in 2025 or earlier",
+                   [_fp("intake.spouse.date_of_death", spouse["date_of_death"])],
                    anchor, about_status=True)
     if status == "qss":
         d.escalate("E5", "Qualifying surviving spouse claimed", ["intake.filing_status"],
@@ -193,6 +196,7 @@ def _check_eligibility(intake: dict, status: str | None, d: _Decisions) -> dict:
     tp_senior = _is_senior(taxpayer)
     sp_senior = _is_senior(spouse) if status == "mfj" else None
 
+    # Anything listed in `missing` sends the session back to Intake; nothing is guessed.
     missing = []
     if status is None:
         missing.append("intake.filing_status")
@@ -200,6 +204,16 @@ def _check_eligibility(intake: dict, status: str | None, d: _Decisions) -> dict:
         missing.append("intake.taxpayer.birth_date")
     if status == "mfj" and sp_senior is None:
         missing.append("intake.spouse.birth_date")
+    if not TEST_SSN.match(taxpayer.get("ssn") or ""):
+        missing.append("intake.taxpayer.ssn")
+    if status in ("mfj", "mfs") and not TEST_SSN.match((spouse or {}).get("ssn") or ""):
+        missing.append("intake.spouse.ssn")
+    for i, dependent in enumerate(intake.get("dependents") or []):
+        for field in ("name", "relationship"):
+            if not dependent.get(field):
+                missing.append(f"intake.dependents.{i}.{field}")
+        if not TEST_SSN.match(dependent.get("ssn") or ""):
+            missing.append(f"intake.dependents.{i}.ssn")
 
     # 1040-SR: one qualifying spouse is enough on MFJ (A3).
     if tp_senior or sp_senior:
@@ -208,8 +222,11 @@ def _check_eligibility(intake: dict, status: str | None, d: _Decisions) -> dict:
         eligible = None
     else:
         eligible = False
+        evidence = [_fp("intake.taxpayer.birth_date", taxpayer.get("birth_date"))]
+        if status == "mfj":
+            evidence.append(_fp("intake.spouse.birth_date", spouse.get("birth_date")))
         d.escalate("E7", "No one on the return was born before 2 January 1961",
-                   ["intake.taxpayer.birth_date"], "1040-sr-eligibility")
+                   evidence, "1040-sr-eligibility")
     d.cite(f"form_1040sr_eligible={eligible}", "1040-sr-eligibility")
 
     for role, person in (("taxpayer", taxpayer), ("spouse", spouse)):
@@ -242,7 +259,8 @@ def _check_stated_age(role: str, person: dict | None, d: _Decisions):
     age_end_2025 = TAX_YEAR_END.year - born.year - (0 if had_birthday else 1)
     if person["stated_age"] not in (age_end_2025, age_end_2025 + 1):
         d.escalate("E2", f"Stated age of {role} does not match birth date",
-                   [f"intake.{role}.stated_age", f"intake.{role}.birth_date"],
+                   [_fp(f"intake.{role}.stated_age", person["stated_age"]),
+                    _fp(f"intake.{role}.birth_date", person["birth_date"])],
                    "conflicting-information")
 
 
@@ -291,10 +309,12 @@ def _check_documents(intake: dict, documents: list[dict], d: _Decisions):
                            "1099-r-distributions")
             code = str(boxes.get(BOX_1099R_CODE, "")).strip().upper()
             if code != "7":
-                d.escalate("E1", f"1099-R distribution code {code or 'missing'} is not 7", [ref],
-                           "1099-r-distributions")
-        if form == "1099-DIV" and (boxes.get(BOX_1099DIV_CAP_GAIN) or 0) > 0:
-            d.escalate("E1", "1099-DIV capital gain distributions", [ref], "dividends")
+                d.escalate("E1", f"1099-R distribution code {code or 'missing'} is not 7",
+                           [_fp(ref, code)], "1099-r-distributions")
+        cap_gain = boxes.get(BOX_1099DIV_CAP_GAIN) or 0
+        if form == "1099-DIV" and cap_gain > 0:
+            d.escalate("E1", "1099-DIV capital gain distributions", [_fp(ref, cap_gain)],
+                       "dividends")
     d.cite("documents_checked", "in-scope-documents")
 
 
@@ -317,9 +337,10 @@ def _check_refund_account(intake: dict, status: str | None, d: _Decisions):
     if refund.get("method") != "direct_deposit":
         return
     allowed = {"taxpayer", "joint"} | ({"spouse"} if status == "mfj" else set())
-    if refund.get("account_owner") not in allowed:
+    owner = refund.get("account_owner")
+    if owner not in allowed:
         d.escalate("E6", "Refund account is not in the taxpayer's name",
-                   ["intake.refund.account_owner"], "refund-account")
+                   [_fp("intake.refund.account_owner", owner)], "refund-account")
 
 
 def _check_flags(flags: list[dict], d: _Decisions):
@@ -358,6 +379,18 @@ def _now() -> str:
     return datetime.now(TZ).isoformat(timespec="seconds")
 
 
+def _fp(ref: str, value) -> str:
+    """Evidence ref plus a short hash of the value that triggered it.
+
+    A staff resolution then only matches the exact data it was given: if the value
+    changes (e.g. a different refund-account owner), the key changes and Rules
+    escalates again. Only values that can change while still triggering are
+    fingerprinted; the hash keeps the value itself out of the record.
+    """
+    digest = hashlib.sha256(json.dumps(value, sort_keys=True, default=str).encode()).hexdigest()
+    return f"{ref}@{digest[:8]}"
+
+
 def _key(code: str, reason: str, evidence: list[str]) -> tuple:
     return code, reason, tuple(evidence)
 
@@ -366,11 +399,24 @@ def _public(trigger: dict) -> dict:
     return {k: trigger[k] for k in ("code", "reason", "evidence", "citation")}
 
 
+def _valid_resolution(escalation: dict) -> bool:
+    """Resolved by a named staff member with an option allowed for that E-code."""
+    resolution = escalation.get("resolution") or {}
+    allowed = ESCALATION_CATALOG.get(escalation.get("code"), {}).get("options", [])
+    return (escalation.get("status") == "resolved"
+            and resolution.get("option") in allowed
+            and bool(resolution.get("resolved_by")))
+
+
 def _to_escalations(triggers: list[dict], existing: list[dict]) -> tuple[list[dict], list[dict]]:
     """Turn triggers into new escalation records, skipping ones already raised.
 
-    A trigger already raised and resolved with a continuing option (e.g.
-    "not_applicable_continue") is returned in `cleared` so it no longer blocks.
+    Compared against the latest record with the same key:
+    - open: still blocking, not raised again;
+    - validly resolved with a continuing option (e.g. "not_applicable_continue"):
+      returned in `cleared` so it no longer blocks;
+    - validly resolved with a closing option: not raised again;
+    - anything else (e.g. "resolved" with no resolution): raised again.
     """
     by_key = {_key(e["code"], e["reason"], e.get("evidence", [])): e for e in existing}
     next_num = 1 + max((int(e["id"].split("_")[1]) for e in existing
@@ -379,10 +425,12 @@ def _to_escalations(triggers: list[dict], existing: list[dict]) -> tuple[list[di
     for t in triggers:
         prior = by_key.get(_key(t["code"], t["reason"], t["evidence"]))
         if prior is not None:
-            resolution = prior.get("resolution") or {}
-            if prior.get("status") == "resolved" and resolution.get("option") not in CLOSING_OPTIONS:
-                cleared.append(t)
-            continue
+            if prior.get("status") == "open":
+                continue
+            if _valid_resolution(prior):
+                if prior["resolution"]["option"] not in CLOSING_OPTIONS:
+                    cleared.append(t)
+                continue
         catalog = ESCALATION_CATALOG[t["code"]]
         new.append({
             "id": f"esc_{next_num:04d}",

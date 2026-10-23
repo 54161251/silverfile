@@ -50,6 +50,20 @@ Document box keys Rules needs (P4, please use these in fixtures): 1099-R `"7"`
 Rules is idempotent: re-running after a send-back doesn't duplicate an escalation, and
 an escalation resolved with a continuing option no longer blocks scope.
 
+- **What counts as resolved.** `status == "resolved"` **and** `resolution.resolved_by` is
+  set **and** `resolution.option` is one of that E-code's options. Anything else (for
+  example "resolved" with an empty resolution) is raised again as a new escalation.
+  P1/P7: store the resume payload (contract #3) as the escalation's `resolution`.
+- **Approvals are tied to the data.** Where the triggering value can change while still
+  triggering (refund-account owner, birth dates, stated age, 1099-R code, 1099-DIV box
+  2a), the evidence entry carries a short hash of the value, e.g.
+  `intake.refund.account_owner@1a2b3c4d`. If the value changes after approval, the key no
+  longer matches and Rules escalates again.
+- **Missing inputs.** `eligibility.missing` lists anything Rules needs and doesn't have,
+  including a missing or non-900-series SSN for the taxpayer, for the spouse (MFJ/MFS),
+  and for each dependent's name, SSN and relationship. P1: route to Intake while it is
+  non-empty.
+
 ## Gaps in the team doc — proposed fixes (needs P1 approval)
 
 1. **Who writes escalation records.** E4/E8 say "raised by Intake" and E2 says "Rules or
