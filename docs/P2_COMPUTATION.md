@@ -50,7 +50,7 @@ Absent direct lines default to 0 with `kind="default_zero"` (visible on the dash
 set `REQUIRED_DIRECT_LINES = ("10", "26")` at the top of `computation.py`.
 
 ## Handoffs / agreements needed from other workstreams
-1. **P5 Rules:** `senior_deduction_qualifiers` must be `[]` for MFS. A non-empty MFS list is treated as a Rules bug and blocks (the tool raises). `box_count_12d` must equal age + blindness boxes; a mismatch blocks.
+1. **P5 Rules:** `box_count_12d` must equal age + blindness boxes; a mismatch blocks. `senior_deduction_qualifiers` may list an MFS taxpayer: `senior_deduction` returns 0 for MFS regardless (C12 / A12).
 2. **P4 Extraction:** box keys `ira_sep_simple` (bool) and `qcd_amount` on 1099-R are conventions I chose. Agree or tell me the real keys. Superseded/corrected documents must be removed or flagged before Computation, since all documents in `state["documents"]` are summed.
 3. **P3 Intake:** ask for Schedule 1 total (8), adjustments (10), Schedule 2 (17, 23), credits (19, 20), estimated payments (26) explicitly, entering 0 when none. Confirmations of low-confidence boxes go in `user_inputs["<doc_id>.<box>"]`.
 4. **P1 Orchestrator:** no change needed. Computation returns `open_questions: []` on success, which is what routes to review.

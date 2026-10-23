@@ -28,11 +28,11 @@ def values(output):
 
 
 class GoldenReturns(unittest.TestCase):
-    def test_golden_set_is_complete(self):
+    def test_R12_golden_set_is_complete(self):
         self.assertGreaterEqual(len(GOLDENS), 7)
         self.assertTrue(SUCCESS and BLOCKED)
 
-    def test_values_match_hand_derivation(self):
+    def test_R12_values_match_hand_derivation(self):
         for name, golden in SUCCESS.items():
             with self.subTest(case=name):
                 output = compute_return(copy.deepcopy(golden["state"]), now=NOW)
@@ -45,12 +45,12 @@ class GoldenReturns(unittest.TestCase):
                     if line not in expected:
                         self.assertEqual(got.get(line), 0, f"line {line} should be 0")
 
-    def test_every_line_is_present(self):
+    def test_R12_every_line_is_present(self):
         for name, golden in SUCCESS.items():
             with self.subTest(case=name):
                 self.assertEqual(set(values(compute_return(copy.deepcopy(golden["state"]), now=NOW))), set(ALL_LINES))
 
-    def test_output_passes_the_state_contract(self):
+    def test_R10_output_passes_the_state_contract(self):
         for name, golden in SUCCESS.items():
             with self.subTest(case=name):
                 output = compute_return(copy.deepcopy(golden["state"]), now=NOW)
@@ -58,7 +58,7 @@ class GoldenReturns(unittest.TestCase):
                 self.assertEqual(set(checked), AGENT_FIELDS["computation"])
                 self.assertEqual(set(checked["lines"]), set(ALL_LINES))
 
-    def test_blocked_cases(self):
+    def test_R10_blocked_cases(self):
         for name, golden in BLOCKED.items():
             with self.subTest(case=name):
                 output = compute_return(copy.deepcopy(golden["state"]), now=NOW)
@@ -68,7 +68,7 @@ class GoldenReturns(unittest.TestCase):
                     self.assertTrue(any(fragment in q for q in output["open_questions"]), fragment)
                 validate_update("computation", copy.deepcopy(output))
 
-    def test_confirmed_values_are_marked_in_sources(self):
+    def test_R12_confirmed_values_are_marked_in_sources(self):
         for name, golden in SUCCESS.items():
             for line, doc_id in golden.get("expect_source_confirmed", {}).items():
                 with self.subTest(case=name, line=line):
@@ -80,7 +80,7 @@ class GoldenReturns(unittest.TestCase):
 class Arithmetic(unittest.TestCase):
     """Identities that must hold on any computed return, independent of the golden numbers."""
 
-    def test_line_identities(self):
+    def test_C7_C9_C13_C14_C19_C20_line_identities(self):
         for name, golden in SUCCESS.items():
             with self.subTest(case=name):
                 v = values(compute_return(copy.deepcopy(golden["state"]), now=NOW))
@@ -95,7 +95,7 @@ class Arithmetic(unittest.TestCase):
                 self.assertEqual(v["37"], max(0, v["24"] - v["33"]))
                 self.assertTrue(v["34"] == 0 or v["37"] == 0)
 
-    def test_6b_never_exceeds_85_percent_of_6a(self):
+    def test_C6_6b_never_exceeds_85_percent_of_6a(self):
         for name, golden in SUCCESS.items():
             with self.subTest(case=name):
                 v = values(compute_return(copy.deepcopy(golden["state"]), now=NOW))
@@ -114,13 +114,13 @@ class ScheduleOneFeedsSocialSecurity(unittest.TestCase):
         from tests import oracle
         return oracle.taxable_ss("single", 24000, 20000 + 1200 + line8, 0, line10)
 
-    def test_line_8_raises_taxable_benefits(self):
+    def test_C6_line_8_raises_taxable_benefits(self):
         got = self.run_with(**{"8": 2000})
         self.assertEqual(got["6b"], self.oracle_6b(line8=2000))
         self.assertEqual(got["6b"], 5520)
         self.assertEqual(got["9"], 20000 + 1200 + 2000 + 5520)
 
-    def test_line_10_lowers_taxable_benefits_and_agi(self):
+    def test_C6_line_10_lowers_taxable_benefits_and_agi(self):
         got = self.run_with(**{"10": 1000})
         self.assertEqual(got["6b"], self.oracle_6b(line10=1000))
         self.assertEqual(got["6b"], 3600)  # provisional 32,200; 0.5 x 7,200
@@ -131,13 +131,13 @@ class Provenance(unittest.TestCase):
     def setUp(self):
         self.lines = compute_return(copy.deepcopy(SUCCESS["g02_mfj_two_seniors_ss_cap"]["state"]), now=NOW)["lines"]
 
-    def test_kinds(self):
+    def test_R9_kinds(self):
         self.assertEqual(self.lines["16"]["kind"], "computed")
         self.assertEqual(self.lines["26"]["kind"], "user_input")
         self.assertEqual(self.lines["7"]["kind"], "default_zero")
         self.assertEqual(self.lines["10"]["kind"], "default_zero")
 
-    def test_computed_lines_cite_a_tool_and_inputs(self):
+    def test_R9_computed_lines_cite_a_tool_and_inputs(self):
         for line, record in self.lines.items():
             if record["kind"] == "computed":
                 with self.subTest(line=line):
@@ -145,23 +145,23 @@ class Provenance(unittest.TestCase):
                     self.assertEqual(record["tool"]["tax_year"], 2025)
                     self.assertTrue(record["inputs"] and record["formula"])
 
-    def test_document_lines_trace_to_boxes(self):
+    def test_C1_document_lines_trace_to_boxes(self):
         sources = self.lines["6a"]["sources"]
         self.assertEqual(sorted(s["doc_id"] for s in sources), ["ssa_1", "ssa_2"])
         self.assertTrue(all(s["box"] == "5" for s in sources))
         self.assertEqual(self.lines["5a"]["sources"][0]["doc_id"], "r_1")
 
-    def test_unrounded_value_is_kept_in_formula(self):
+    def test_A23_unrounded_value_is_kept_in_formula(self):
         record = compute_return(copy.deepcopy(SUCCESS["g04_hoh_pension_half_dollar_credits"]["state"]), now=NOW)["lines"]["16"]
         self.assertEqual(record["value"], 718)
         self.assertIn("717.5", record["formula"])
 
-    def test_timestamps_have_a_timezone(self):
+    def test_R9_timestamps_have_a_timezone(self):
         self.assertTrue(all(r["timestamp"] == NOW for r in self.lines.values()))
         default = compute_return(copy.deepcopy(SUCCESS["g01_single_ss_50pct"]["state"]))["lines"]["9"]["timestamp"]
         self.assertRegex(default, r"[+-]\d\d:\d\d$|Z$")
 
-    def test_full_provenance_record_in_user_inputs_is_preserved(self):
+    def test_C8_full_provenance_record_in_user_inputs_is_preserved(self):
         state = copy.deepcopy(SUCCESS["g01_single_ss_50pct"]["state"])
         state["user_inputs"]["23"] = {"value": 50, "kind": "human_resolution", "entered_by": "staff:jlee",
                                       "timestamp": NOW, "citation": "policy.md#schedules"}
@@ -182,7 +182,7 @@ class Blocking(unittest.TestCase):
         self.assertTrue(any(fragment in q for q in output["open_questions"]), output["open_questions"])
         return output
 
-    def test_missing_prerequisites_are_named(self):
+    def test_R10_missing_prerequisites_are_named(self):
         self.blocked(self.state(filing_status_validated=None), "filing_status")
         self.blocked(self.state(scope={"in_scope": False}), "scope.in_scope")
         self.blocked(self.state(eligibility={}), "eligibility")
@@ -190,26 +190,26 @@ class Blocking(unittest.TestCase):
         del state["box_count_12d"]
         self.blocked(state, "box_count_12d")
 
-    def test_box_count_disagreement_blocks(self):
+    def test_C10_box_count_disagreement_blocks(self):
         self.blocked(self.state(box_count_12d=2), "box_count_12d")
 
-    def test_blank_required_box(self):
+    def test_C1_blank_required_box(self):
         state = self.state()
         state["documents"][0]["boxes"]["1"] = None
         self.blocked(state, "documents.w2_1.boxes.1")
 
-    def test_negative_or_non_numeric_box(self):
+    def test_C1_negative_or_non_numeric_box(self):
         for bad in (-5, "abc"):
             with self.subTest(bad=bad):
                 state = self.state()
                 state["documents"][0]["boxes"]["1"] = bad
                 self.blocked(state, "documents.w2_1.boxes.1")
 
-    def test_bad_user_input(self):
+    def test_C8_bad_user_input(self):
         self.blocked(self.state(user_inputs={"19": -10}), "user_inputs.19")
         self.blocked(self.state(user_inputs={"20": "lots"}), "user_inputs.20")
 
-    def test_mfs_who_lived_with_spouse_is_out_of_worksheet(self):
+    def test_A17_mfs_who_lived_with_spouse_is_out_of_worksheet(self):
         golden = SUCCESS["g05_mfs_senior_deduction_zero"]["state"]
         state = copy.deepcopy(golden)
         state["intake"]["mfs_lived_with_spouse"] = True
@@ -217,14 +217,14 @@ class Blocking(unittest.TestCase):
         self.assertEqual(output["lines"], {})
         self.assertTrue(any("Social Security" in q for q in output["open_questions"]))
 
-    def test_mfs_with_senior_qualifier_is_a_rules_contract_violation(self):
+    def test_C12_mfs_with_senior_qualifier_still_gets_zero(self):
         state = copy.deepcopy(SUCCESS["g05_mfs_senior_deduction_zero"]["state"])
         state["eligibility"]["senior_deduction_qualifiers"] = ["taxpayer"]
         output = compute_return(state, now=NOW)
-        self.assertEqual(output["lines"], {})
-        self.assertTrue(output["open_questions"])
+        self.assertEqual(output["open_questions"], [])
+        self.assertEqual(values(output)["13b"], 0)
 
-    def test_required_direct_lines_switch(self):
+    def test_C8_required_direct_lines_switch(self):
         original = computation.REQUIRED_DIRECT_LINES
         computation.REQUIRED_DIRECT_LINES = ("10", "26")
         try:
@@ -236,34 +236,34 @@ class Blocking(unittest.TestCase):
         finally:
             computation.REQUIRED_DIRECT_LINES = original
 
-    def test_blocked_output_never_mixes_lines_and_questions(self):
+    def test_R10_blocked_output_never_mixes_lines_and_questions(self):
         output = compute_return(self.state(box_count_12d=3), now=NOW)
         self.assertFalse(output["lines"] and output["open_questions"])
 
 
 class Behaviour(unittest.TestCase):
-    def test_input_state_is_not_mutated(self):
+    def test_R10_input_state_is_not_mutated(self):
         for golden in GOLDENS.values():
             state = copy.deepcopy(golden["state"])
             before = copy.deepcopy(state)
             compute_return(state, now=NOW)
             self.assertEqual(state, before)
 
-    def test_deterministic(self):
+    def test_R9_deterministic(self):
         state = SUCCESS["g02_mfj_two_seniors_ss_cap"]["state"]
         self.assertEqual(compute_return(copy.deepcopy(state), now=NOW), compute_return(copy.deepcopy(state), now=NOW))
 
-    def test_document_order_does_not_matter(self):
+    def test_R10_document_order_does_not_matter(self):
         state = copy.deepcopy(SUCCESS["g02_mfj_two_seniors_ss_cap"]["state"])
         shuffled = copy.deepcopy(state)
         shuffled["documents"].reverse()
         self.assertEqual(compute_return(state, now=NOW), compute_return(shuffled, now=NOW))
 
-    def test_only_contract_fields_are_returned(self):
+    def test_R10_only_contract_fields_are_returned(self):
         output = run(copy.deepcopy(SUCCESS["g01_single_ss_50pct"]["state"]))
         self.assertEqual(set(output), {"lines", "open_questions"})
 
-    def test_works_inside_a_running_event_loop(self):
+    def test_R10_works_inside_a_running_event_loop(self):
         import asyncio
 
         async def inside():
@@ -271,25 +271,25 @@ class Behaviour(unittest.TestCase):
 
         self.assertEqual(asyncio.run(inside())["lines"]["34"]["value"], 1345)
 
-    def test_ira_flag_routes_to_line_4_not_5(self):
+    def test_C4_ira_flag_routes_to_line_4_not_5(self):
         state = copy.deepcopy(SUCCESS["g03_single_ira_qcd_phaseout"]["state"])
         v = values(compute_return(state, now=NOW))
         self.assertEqual((v["4a"], v["5a"]), (120000, 0))
 
-    def test_multiple_w2s_are_summed(self):
+    def test_C1_multiple_w2s_are_summed(self):
         state = copy.deepcopy(SUCCESS["g01_single_ss_50pct"]["state"])
         state["documents"].append({"doc_id": "w2_2", "form": "W-2", "boxes": {"1": 5000, "2": 400}})
         v = values(compute_return(state, now=NOW))
         self.assertEqual((v["1a"], v["25a"]), (25000, 1900))
 
-    def test_negative_schedule_1_total_is_allowed(self):
+    def test_C7_negative_schedule_1_total_is_allowed(self):
         state = copy.deepcopy(SUCCESS["g01_single_ss_50pct"]["state"])
         state["user_inputs"]["8"] = -300
         out = compute_return(state, now=NOW)
         self.assertEqual(out["open_questions"], [])
         self.assertEqual(values(out)["8"], -300)
 
-    def test_cli_main_runs(self):
+    def test_R10_cli_main_runs(self):
         import contextlib
         import io
 

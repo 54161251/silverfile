@@ -1,6 +1,6 @@
 {
   "name": "g05_mfs_senior_deduction_zero",
-  "description": "MFS (did not live with spouse), 67. Rules gives no senior-deduction qualifier for MFS, so 13b is 0. SSA benefits taxed using the 25,000 base.",
+  "description": "MFS (did not live with spouse), 67. Rules reports one senior-deduction qualifier; C12 gives MFS 0, so 13b is 0. SSA benefits taxed using the 25,000 base.",
   "state": {
     "intake": {
       "filing_status": "mfs",
@@ -18,7 +18,9 @@
       "form_1040sr_eligible": true,
       "taxpayer_65_or_older": true,
       "spouse_65_or_older": false,
-      "senior_deduction_qualifiers": [],
+      "senior_deduction_qualifiers": [
+        "taxpayer"
+      ],
       "missing": []
     },
     "box_count_12d": 1,
@@ -73,7 +75,7 @@
   "hand_derivation": [
     "Other income 30,000 + 600 = 30,600; provisional = 5,000 + 30,600 = 35,600",
     "50% tier = min(5,000, 0.5 x min(10,600, 9,000)) = 4,500; 85% tier = 0.85 x (35,600 - 34,000) = 1,360; 6b = min(5,860, 8,500) = 5,860",
-    "AGI 36,460; 13b = 0 (MFS has no qualifier); 12e = 15,750 + 1 x 1,600 = 17,350; 15 = 19,110",
+    "AGI 36,460; 13b = 0 (MFS, C12/A12, even with a qualifier reported); 12e = 15,750 + 1 x 1,600 = 17,350; 15 = 19,110",
     "Tax = 1,192.50 + 12% x 7,185 = 862.20 -> 2,054.70, rounds to 2,055; withholding 2,000; owe 55"
   ],
   "verification": "AI-derived and cross-checked against tests/oracle.py. P2 must re-verify in an independent spreadsheet (R12) before the demo; see docs/P2_COMPUTATION.md."

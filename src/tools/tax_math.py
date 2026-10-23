@@ -243,16 +243,18 @@ def standard_deduction(filing_status: str, box_count: int) -> dict[str, Any]:
 def senior_deduction(filing_status: str, agi: float, qualifier_count: int) -> dict[str, Any]:
     """Line 13b: enhanced senior deduction (Schedule 1-A), 2025 to 2028.
 
-    Each qualifying person (decided by the Rules agent: age 65+, valid SSN, not MFS) starts at
+    Each qualifying person (decided by the Rules agent: age 65+, valid SSN) starts at
     6,000. Each person's amount is reduced by 6% of the AGI above 75,000 (150,000 if MFJ),
-    never below 0. MAGI is taken to be AGI (line 11a). The line total is rounded once.
+    never below 0. MFS always gets 0 (C12). MAGI is taken to be AGI (line 11a). The line total is rounded once.
     This is separate from, and in addition to, the additional standard deduction on line 12e.
     """
     status = _status(filing_status)
     income = to_decimal(agi, "agi")
     people = _count(qualifier_count, "qualifier_count", 2 if status == "mfj" else 1)
-    if status == "mfs" and people:
-        raise TaxMathError("Married filing separately cannot claim the senior deduction (policy.md#senior-deduction)")
+    if status == "mfs":  # rule C12 / A12: MFS gets 0 whatever Rules reports as qualifiers
+        return _result("senior_deduction", 0, "married filing separately: senior deduction is 0",
+                       [_entry("filing status", status), _entry("AGI (line 11a, used as MAGI)", income, "11a"),
+                        _entry("qualifying people (ignored for MFS)", people)], CITE_SENIOR_DEDUCTION)
     threshold = SENIOR_THRESHOLD.get(status, SENIOR_THRESHOLD_DEFAULT)
     excess = max(Decimal(0), income - threshold)
     each = max(Decimal(0), SENIOR_AMOUNT - SENIOR_PHASEOUT_RATE * excess)
