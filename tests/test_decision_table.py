@@ -143,9 +143,26 @@ def test_A12_senior_deduction_is_zero_for_mfs():
     assert out["schedules"]["schedule_1a"] is False
 
 
-def test_A12_senior_deduction_requires_valid_ssn():
-    state = make(taxpayer={"birth_date": "1955-06-01", "ssn": None})
-    assert "taxpayer" not in rules.run(state)["eligibility"]["senior_deduction_qualifiers"]
+def test_A12_missing_ssn_is_reported_to_intake_not_silently_dropped():
+    out = rules.run(make(taxpayer={"birth_date": "1955-06-01", "ssn": None}))
+    assert "taxpayer" not in out["eligibility"]["senior_deduction_qualifiers"]
+    assert "intake.taxpayer.ssn" in out["eligibility"]["missing"]
+
+
+@pytest.mark.parametrize("ssn", [None, "", "123-45-6789"])
+def test_A19_spouse_ssn_missing_or_invalid_on_mfj(ssn):
+    out = rules.run(make(spouse={"birth_date": "1959-01-01", "ssn": ssn}))
+    assert "intake.spouse.ssn" in out["eligibility"]["missing"]
+    assert out["eligibility"]["senior_deduction_qualifiers"] == ["taxpayer"]
+
+
+def test_A20_incomplete_dependent_is_reported():
+    out = rules.run(make(dependents=[{"name": "Alex Doe", "relationship": "grandchild"}]))
+    assert out["eligibility"]["missing"] == ["intake.dependents.0.ssn"]
+
+
+def test_clean_return_reports_nothing_missing():
+    assert rules.run(make())["eligibility"]["missing"] == []
 
 
 # --- E1: out of scope --------------------------------------------------------------------
@@ -314,14 +331,67 @@ def test_rerun_does_not_duplicate_open_escalation():
     assert rules.run(state)["escalations"] == []
 
 
+def resolve(esc, option, resolved_by="staff_jlee"):
+    return esc | {"status": "resolved",
+                  "resolution": {"option": option, "resolved_by": resolved_by, "note": "ok"}}
+
+
 def test_resolved_continue_clears_scope_item():
     state = make(out_of_scope_items=["state_return"])
     esc = rules.run(state)["escalations"][0]
-    esc |= {"status": "resolved", "resolution": {"option": "not_applicable_continue"}}
-    state["escalations"] = [esc]
+    state["escalations"] = [resolve(esc, "not_applicable_continue")]
     out = rules.run(state)
     assert out["escalations"] == []
     assert out["scope"]["in_scope"] is True
+
+
+@pytest.mark.parametrize("resolution", [
+    None,
+    {},
+    {"option": "not_applicable_continue"},                            # no staff name
+    {"option": "verified_continue", "resolved_by": "staff_jlee"},     # not an E1 option
+], ids=["none", "empty", "no_resolved_by", "wrong_option"])
+def test_incomplete_resolution_does_not_clear(resolution):
+    state = make(out_of_scope_items=["state_return"])
+    esc = rules.run(state)["escalations"][0]
+    state["escalations"] = [esc | {"status": "resolved", "resolution": resolution}]
+    out = rules.run(state)
+    assert codes(out) == ["E1"]
+    assert out["escalations"][0]["id"] == "esc_0002"
+    assert out["scope"]["in_scope"] is False
+
+
+def test_E6_changed_refund_owner_after_approval_escalates_again():
+    state = make(refund={"method": "direct_deposit", "account_owner": "other"})
+    esc = rules.run(state)["escalations"][0]
+    state["escalations"] = [resolve(esc, "verified_continue")]
+    assert rules.run(state)["escalations"] == []
+
+    state["intake"]["refund"]["account_owner"] = "unknown"
+    assert codes(rules.run(state)) == ["E6"]
+
+
+def test_E1_changed_1099R_code_after_approval_escalates_again():
+    docs = copy.deepcopy(CLEAN["documents"])
+    docs[1]["boxes"]["7"] = "1"
+    state = make(documents=docs)
+    esc = rules.run(state)["escalations"][0]
+    state["escalations"] = [resolve(esc, "not_applicable_continue")]
+    assert rules.run(state)["escalations"] == []
+
+    state["documents"][1]["boxes"]["7"] = "2"
+    assert codes(rules.run(state)) == ["E1"]
+
+
+def test_E5_staff_setting_filing_status_does_not_loop():
+    spouse = {"birth_date": "1950-01-01", "ssn": "902-22-2222", "date_of_death": "2025-08-02"}
+    state = make(spouse=spouse)
+    esc = rules.run(state)["escalations"][0]
+    state["escalations"] = [resolve(esc, "set_filing_status")]
+    state["intake"]["filing_status"] = "single"   # the staff override, applied by P1
+    out = rules.run(state)
+    assert out["escalations"] == []
+    assert out["filing_status_validated"] == "single"
 
 
 def test_new_escalation_ids_continue_after_existing():
