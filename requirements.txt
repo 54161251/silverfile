@@ -1,0 +1,6 @@
+# P1 runtime. P2/P3/P4/P6/P7 add pinned workstream dependencies in their PRs.
+langgraph==1.2.16
+langgraph-checkpoint-sqlite==3.1.2
+pydantic==2.14.1
+tzdata==2026.5
+pytest==9.1.1
