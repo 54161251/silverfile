@@ -95,7 +95,7 @@ def validate_intake(value: Any):
     """Reject non-test SSNs before they can reach a persistent checkpoint."""
     if isinstance(value, dict):
         for key, item in value.items():
-            if key.lower() == "ssn" and item is not None:
+            if key.lower().rsplit(".", 1)[-1] == "ssn" and item is not None:
                 if not isinstance(item, str) or not re.fullmatch(r"9\d{2}-?\d{2}-?\d{4}", item):
                     raise ValueError("Only synthetic 900-series SSNs are accepted")
             validate_intake(item)
