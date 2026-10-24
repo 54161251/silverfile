@@ -19,3 +19,10 @@ were fabricated. Docker engine is unavailable; container checks remain pending.
 
 Owner requested self-service merging: confirmed six collaborators and no branch rules,
 then updated repository workflow documents. The source Google Doc was not edited.
+
+## October 24 — README maintenance
+
+Codex refreshed README against current main, including P2/P6/P7 components, separated
+demo behavior from production gaps, and added contributor documentation responsibilities
+to CONTRIBUTING and the PR template. Verification: local Markdown link targets and diff
+formatting checked. No new Docker run or full-suite success is claimed by this docs update.
