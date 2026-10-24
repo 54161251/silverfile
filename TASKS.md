@@ -33,13 +33,20 @@ queue, return detail, sign-in, and resolve buttons wired to `Sessions.resume`. D
 hover and click provenance, plus the filled official IRS PDF. See docs/P7_DASHBOARD.md. Still open for P7:
 demo video, and showing real sessions' lines once Computation runs in the graph.
 
+P6 update (Oct 24): Review agent (`src/agents/review.py`) runs provenance, totals, rules and scope
+checks, recomputing totals through the MCP tools, and sends findings back by target agent. 20 tests in
+`tests/test_review.py`; details in docs/P6_REVIEW.md. CI (`.github/workflows/ci.yml`) runs the full suite
+and reviews goldens g01, g05, g06 on every push and PR. Docker: `docker compose up --build`, dashboard at
+localhost:8501 with two demo sessions, verified on macOS. Still open for P6: README Docker section,
+goldens g02-g04 need 1099-R box 7 (P2/P4), grader simulation once Intake and Extraction land.
+
 ## Milestone 2 — One complete clean case
 - [ ] Implement intake, saved sessions, and fake-SSN validation.
 - [ ] Implement extraction from a synthetic W-2 image.
 - [ ] Implement cited eligibility and scope checks.
 - [x] Implement required calculations through deterministic MCP tools.
 - [ ] Generate a populated draft 1040-SR and inspectable provenance.
-- [ ] Implement an independent audit agent and conditional orchestration.
+- [x] Implement an independent audit agent and conditional orchestration.
 - [ ] Provide a basic employee dashboard.
 
 ## Milestone 3 — Robustness and evidence
