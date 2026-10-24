@@ -5,3 +5,5 @@ pydantic==2.14.1
 tzdata==2026.5
 pytest==9.1.1
 mcp==2.3.0
+streamlit==1.65.0  # P7: staff dashboard and taxpayer page (D8)
+pypdf==6.20.0  # P7: fill the official 1040-SR PDF (D7 stretch)
