@@ -1,0 +1,38 @@
+# P6: run the whole test suite on every push to main and on every pull request.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"  # team target, see README
+          cache: pip
+
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Run tests
+        run: python -m pytest -q
+
+      # g02-g04 join this list once their 1099-R fixtures carry box 7 (see docs/P6_REVIEW.md)
+      - name: Compute and review clean golden returns
+        run: |
+          for golden in tests/golden/g01_*.json tests/golden/g05_*.json tests/golden/g06_*.json; do
+            echo "== $golden"
+            python -m src.agents.review "$golden"
+          done
