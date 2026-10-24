@@ -1,0 +1,19 @@
+# P6: docker compose up --build, then open http://localhost:8501
+services:
+  silverfile:
+    build: .
+    image: silverfile:latest
+    ports:
+      - "8501:8501"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      # Synthetic demo sign-in for graders. A real .env overrides these.
+      SILVERFILE_STAFF_IDS: ${SILVERFILE_STAFF_IDS:-demo_staff,staff_jlee}
+      SILVERFILE_STAFF_PASSCODE: ${SILVERFILE_STAFF_PASSCODE:-silverfile-demo}
+    volumes:
+      - silverfile-runtime:/app/runtime
+
+volumes:
+  silverfile-runtime:
