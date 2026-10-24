@@ -1,8 +1,26 @@
 # SilverFile — Team Workspace
 
-A collaborative starter repository for the team's seven-person SilverFile project: six agents plus a dashboard/demo workstream.
+A shared workspace for the team's seven-person SilverFile project: six agents plus a dashboard/demo workstream.
 
-**Status: P1 integration runtime and P5 Rules agent implemented. An offline walking skeleton runs; the complete tax application is still in development.**
+**Status checked October 24, 2026: orchestration, Rules, Computation, Review, the staff dashboard, form rendering, CI and Docker configuration are present. Production Intake and Extraction are still missing; a complete taxpayer-to-draft workflow is not yet demonstrated.**
+
+## Current implementation
+
+| Owner | Component | Current state | Details |
+|---|---|---|---|
+| P1 — Kaiwen | Contracts, orchestration, checkpoints, interrupts, guards | Implemented; document correction/versioning needs integration | [P1 handoff](docs/IMPLEMENTATION_NOTES.md) |
+| P2 — Jad | Computation and deterministic MCP tools | Implemented; golden returns need human verification | [Computation](docs/P2_COMPUTATION.md) |
+| P3 — Zimo | Conversational Intake, memory and context metrics | Production adapter and taxpayer page pending | [Tasks](TASKS.md) |
+| P4 — Christina | W-2 image extraction, security and fixtures | Production adapter and assignment demo fixtures pending | [Tasks](TASKS.md) |
+| P5 — Lluc | Eligibility, Rules and escalations | Implemented | [Rules interface](docs/p5_rules_interface.md) |
+| P6 — Ziling | Review, CI and Docker | Implemented; full grader simulation pending | [Review](docs/P6_REVIEW.md) |
+| P7 — David | Staff dashboard, human resolution, HTML/PDF output | Implemented; final demo video pending | [Dashboard](docs/P7_DASHBOARD.md) |
+
+“Implemented” describes a component, not acceptance of the complete application. The
+offline graph still uses placeholder Intake, Extraction, Computation and Review adapters;
+its real Rules agent runs, but it does not calculate a tax return. The dashboard's
+**Sample returns** tab separately invokes real Computation on golden data. These are
+different demonstrations.
 
 ## Start here
 
@@ -43,18 +61,24 @@ The P1 routing topology is implemented; the offline demo still uses placeholder 
 
 | Location | Purpose |
 |---|---|
-| `src/agents/` | Six distinct agents |
+| `src/agents/` | Production Rules, Computation and Review; Intake/Extraction pending |
+| `src/graph.py`, `src/memory.py`, `src/state.py` | Routing, SQLite sessions and shared contracts |
+| `src/demo_agents.py` | Explicit offline placeholders, separate from production adapters |
+| `streamlit_app.py`, `src/dashboard/` | Staff UI, resolution, provenance and form rendering |
 | `src/tools/` | Deterministic MCP calculation tools |
-| `data/fixtures/` | Synthetic tax documents and test inputs |
-| `evals/` | Evaluation scenarios |
+| `tests/golden/` | Synthetic computation cases; human cross-check still required |
+| `data/fixtures/`, `evals/` | Reserved for assignment fixtures and evaluation scenarios |
 | `tests/` | Routing, reducer, calculation, and loop-guard tests |
 | `traces/` | Sanitized execution evidence |
 | `docs/` | Architecture, metrics, implementation notes, AI disclosure |
-| `demo/` | Clean and human-intervention demo instructions and video |
+| `demo/` | Current walkthroughs; final assignment cases and video pending |
+| `.github/workflows/ci.yml` | Python 3.11 tests and selected golden-return reviews |
+| `Dockerfile`, `docker-compose.yml` | Container setup and dashboard service |
 
 ## Running the project
 
-Use Python 3.11 (team target). Local checks so far used Python 3.13.
+Use Python 3.11 (team target and CI configuration). Run the current tests in your own
+environment; do not treat a historical test count as the latest CI result.
 
 ```sh
 python -m venv .venv
@@ -80,7 +104,85 @@ fails until the missing adapters are supplied. Runtime SQLite files live under i
 sets the database path. P1 uses no API credentials; model configuration belongs to the
 agent owners.
 
+### Staff dashboard
+
+Copy `.env.example` to `.env` and set the staff variables there. Never commit `.env`.
+In PowerShell, use `Copy-Item .env.example .env`; on macOS/Linux, use
+`cp .env.example .env`. The included sign-in values are for synthetic local demos.
+
+```sh
+python run.py start --demo --hitl --thread-id dashboard-hitl
+python -m streamlit run streamlit_app.py
+```
+
+Open http://localhost:8501. Sign in with the configured staff ID and passcode to resolve
+an escalation; without them, the dashboard is read-only. The CLI and dashboard must use
+the same database. Set `SILVERFILE_DB` in the shell for CLI commands if changing the
+default; the Streamlit entry point also loads `.env`.
+
+Use **Sample returns** for computed HTML/PDF previews. Demo sessions remain routing
+examples and show no computed form lines. See [dashboard walkthrough](demo/P7_DASHBOARD_WALKTHROUGH.md).
+
+### Docker
+
+With a running Docker engine and Docker Compose:
+
+```sh
+docker compose up --build
+```
+
+Open http://localhost:8501. Compose provides synthetic staff credentials by default
+(`demo_staff` / `silverfile-demo`); `.env` can override them. Session data is stored in
+the named `silverfile-runtime` volume. The entrypoint seeds the routing-demo sessions;
+they are not completed tax returns.
+
+```sh
+docker compose run --rm silverfile python -m pytest -q
+docker compose down
+```
+
+The P6 task update reports a successful macOS Docker run. This README update has not
+independently rerun Docker. CI configuration runs tests and reviews golden cases g01,
+g05 and g06; check the latest [Actions results](https://github.com/54161251/silverfile/actions)
+for actual outcomes. Cases g02–g04 still need 1099-R distribution-code fixture alignment.
+
 ![P1 graph overview](docs/graph.png)
+
+## Integration and submission work still open
+
+- Connect real Intake and Extraction, the taxpayer page, Computation and Review in one workflow.
+- Define corrected-document replacement/versioning so corrections cannot double-count income.
+- Connect staff-entered 1099-R taxable amounts to Computation (E3); the dashboard alone is insufficient.
+- Move remaining income summation and direct-input rounding out of Computation into MCP tools.
+- Align the extraction confidence threshold across workstreams and repair incomplete golden fixtures.
+- Human-check golden returns; run clean and resolved-HITL cases through the real graph.
+- Complete context-token measurements, required W-2 images, traces, report, AI disclosure and video.
+
+These are integration tasks, not claims that all current component tests fail. See
+[TASKS.md](TASKS.md) and the linked owner notes for details and evidence.
+
+## Keeping this README current
+
+**Every contributor updates documentation in the same PR as their feature.** A separate
+README-only PR is also welcome for corrections. You do not need P1 permission for routine
+updates or to merge your tested PR when no major issues remain.
+
+| If your change affects… | Update… |
+|---|---|
+| Implemented features or remaining gaps | Current implementation table and open-work list above |
+| Installation, dependencies or environment variables | Setup commands, requirements.txt and .env.example |
+| CLI, dashboard or Docker behavior | Relevant run instructions and walkthrough |
+| Shared state, agent outputs or handoffs | Owner's document in docs/ and coordinate with affected owners |
+| Tests or verification | PR verification section with command, environment and actual result |
+
+Before merging: pull the latest main, edit the relevant section rather than rewriting the
+whole file, check local links, and run any changed commands you can verify. Label commands
+or outcomes you could not verify. If documentation is unaffected, say why in the PR.
+Resolve README merge conflicts by keeping both contributors' valid updates.
+
+Keep this page as the short project entry point. Put detailed workstream notes in
+`docs/` and link them here. Only mark work complete after the stated behavior is verified;
+sample data, mock adapters and component tests do not prove the complete workflow.
 
 ## Acceptance targets
 
