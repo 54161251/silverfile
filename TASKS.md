@@ -28,6 +28,11 @@ See docs/IMPLEMENTATION_NOTES.md; unchecked application milestones below remain 
 
 P2 update (Oct 23): tax_math functions, the silverfile-tax-math MCP server, the Computation agent (all 41 lines with provenance), seven golden returns and their tests are implemented (src/tools/, src/agents/computation.py, tests/). Interface and open agreements with P3, P4 and P5 are in docs/P2_COMPUTATION.md. Still open for P2: re-derive the goldens in a spreadsheet (R12), report paragraph (R21), and compile the final AI disclosure from the individual logs (R19).
 
+P7 update (Oct 24): Streamlit staff dashboard (`streamlit run streamlit_app.py`): returns list, HITL
+queue, return detail, sign-in, and resolve buttons wired to `Sessions.resume`. Draft 1040-SR as HTML with
+hover and click provenance, plus the filled official IRS PDF. See docs/P7_DASHBOARD.md. Still open for P7:
+demo video, and showing real sessions' lines once Computation runs in the graph.
+
 ## Milestone 2 — One complete clean case
 - [ ] Implement intake, saved sessions, and fake-SSN validation.
 - [ ] Implement extraction from a synthetic W-2 image.
