@@ -35,6 +35,18 @@ def parse_yes_no(answer: str) -> bool | None:
         return False
     return None
 
+ADVICE_PHRASES = (
+    "should i", "can i deduct", "would i pay less", "is it better",
+    "roth", "how can i save", "lower my tax", "worth it to",
+)
+
+
+def looks_like_advice_request(answer: str) -> bool:
+    """True if the user seems to be asking for tax advice instead of answering."""
+    text = answer.lower()
+    return any(phrase in text for phrase in ADVICE_PHRASES)
+
+
 QUESTIONS = [
     {
         "group": None,
