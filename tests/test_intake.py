@@ -65,3 +65,26 @@ def test_field_paths_are_full_paths():
     paths = [field_path(q) for q in QUESTIONS]
     assert "intake.filing_status" in paths
     assert "intake.taxpayer.birth_date" in paths
+
+def test_interrupt_asks_question_and_resumes_with_answer():
+    from langgraph.checkpoint.memory import MemorySaver
+    from langgraph.graph import END, START, StateGraph
+    from langgraph.types import Command
+
+    from src.agents.intake import run_interactive
+
+    builder = StateGraph(dict)
+    builder.add_node("intake", run_interactive)
+    builder.add_edge(START, "intake")
+    builder.add_edge("intake", END)
+    graph = builder.compile(checkpointer=MemorySaver())
+    config = {"configurable": {"thread_id": "t1"}}
+
+    first = graph.invoke({}, config)
+    payload = first["__interrupt__"][0].value
+    assert payload["type"] == "intake"
+    assert payload["fields"] == ["intake.filing_status"]
+
+    final = graph.invoke(Command(resume={"answer": "single"}), config)
+    assert final["intake"]["filing_status"] == "single"
+    
