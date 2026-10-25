@@ -32,21 +32,31 @@ def parse_birth_date(answer: str) -> str | None:
 
 QUESTIONS = [
     {
+        "group": None,
         "field": "filing_status",
         "text": "First, how would you describe your situation for this tax return? "
                 "For example: single, married, or widowed.",
+        "parser": parse_filing_status,
+    },
+    {
+        "group": "taxpayer",
+        "field": "birth_date",
+        "text": "What is your date of birth? For example: March 5, 1958.",
+        "parser": parse_birth_date,
     },
 ]
 
 
-def _is_filled(intake: dict, field: str) -> bool:
-    return intake.get(field) not in (None, "")
+def _is_filled(intake: dict, question: dict) -> bool:
+    group, field = question["group"], question["field"]
+    source = intake.get(group) or {} if group else intake
+    return source.get(field) not in (None, "")
 
 
 def next_question(intake: dict) -> dict | None:
     """Return the first question that has no answer yet, or None if done."""
     for question in QUESTIONS:
-        if not _is_filled(intake, question["field"]):
+        if not _is_filled(intake, question):
             return question
     return None
 
