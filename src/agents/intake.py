@@ -1,13 +1,38 @@
 """Intake agent (P3). The only agent that talks to the taxpayer."""
 from __future__ import annotations
 
+# 要问的问题,按顺序排列。每个问题只问一件事。
+# field: 答案存进 intake 的哪个位置
+# text:  用通俗的话问用户
+QUESTIONS = [
+    {
+        "field": "filing_status",
+        "text": "First, how would you describe your situation for this tax return? "
+                "For example: single, married, or widowed.",
+    },
+]
+
+
+def _is_filled(intake: dict, field: str) -> bool:
+    return intake.get(field) not in (None, "")
+
+
+def next_question(intake: dict) -> dict | None:
+    """Return the first question that has no answer yet, or None if done."""
+    for question in QUESTIONS:
+        if not _is_filled(intake, question["field"]):
+            return question
+    return None
+
 
 def run(state: dict) -> dict:
     """Read the state and return only the fields Intake may write."""
+    intake = state.get("intake") or {}
+    question = next_question(intake)
     return {
-        "intake": state.get("intake") or {},
+        "intake": intake,
         "user_inputs": state.get("user_inputs") or {},
         "flags": state.get("flags") or [],
         "session_summary": state.get("session_summary") or "",
-        "open_questions": state.get("open_questions") or [],
+        "open_questions": [question["field"]] if question else [],
     }
