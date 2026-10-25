@@ -187,4 +187,6 @@ def run_interactive(state: dict) -> dict:
     result = handle_answer(
         {"intake": intake, "flags": flags}, reply["answer"], len(flags) + 1
     )
-    return {"intake": result["intake"], "flags": result["flags"]}
+    question = next_question(result["intake"])
+    return {"intake": result["intake"], "flags": result["flags"],
+            "open_questions": [field_path(question)] if question else []}
