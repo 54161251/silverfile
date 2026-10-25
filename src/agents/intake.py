@@ -56,6 +56,14 @@ def record_answer(intake: dict, field: str, answer: str) -> dict:
     updated[field] = answer
     return updated
 
+def record_nested_answer(intake: dict, group: str, field: str, answer) -> dict:
+    """Save an answer inside a group, e.g. taxpayer -> birth_date. Keeps old answers."""
+    updated = dict(intake)
+    inner = dict(updated.get(group) or {})
+    inner[field] = answer
+    updated[group] = inner
+    return updated
+
 from datetime import datetime, timezone
 
 
