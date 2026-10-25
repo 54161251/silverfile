@@ -57,6 +57,14 @@ QUESTIONS = [
         "field": "blind",
         "text": "Are you blind? Please answer yes or no.",
         "parser": parse_yes_no,
+
+    },
+        {
+        "group": None,
+        "field": "dual_status_alien",
+        "text": "Were you a nonresident of the United States for part of 2025? "
+                "Please answer yes or no.",
+        "parser": parse_yes_no,
     },
 ]
 
