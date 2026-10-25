@@ -125,4 +125,20 @@ def test_summary_lists_done_and_remaining():
 
 def test_summary_is_empty_when_nothing_answered():
     assert build_summary({}) == ""
+
+def test_resumed_session_shows_summary_first():
+    from langgraph.checkpoint.memory import MemorySaver
+    from langgraph.graph import END, START, StateGraph
+
+    builder = StateGraph(dict)
+    builder.add_node("intake", run_interactive)
+    builder.add_edge(START, "intake")
+    builder.add_edge("intake", END)
+    graph = builder.compile(checkpointer=MemorySaver())
+    config = {"configurable": {"thread_id": "t3"}}
+
+    first = graph.invoke({"intake": {"filing_status": "single"}}, config)
+    question = first["__interrupt__"][0].value["question"]
+    assert question.startswith("So far we have covered")
+    assert "date of birth" in question
     
