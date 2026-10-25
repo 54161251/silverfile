@@ -35,7 +35,8 @@ def test_questions_asked_in_order():
 def test_false_answer_is_not_asked_again():
     intake = {"filing_status": "single",
               "taxpayer": {"birth_date": "1958-03-05", "blind": False},
-              "dual_status_alien": False}
+              "dual_status_alien": False,
+              "can_be_claimed_as_dependent": False}
     assert next_question(intake) is None
 
 

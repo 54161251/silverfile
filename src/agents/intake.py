@@ -66,6 +66,13 @@ QUESTIONS = [
                 "Please answer yes or no.",
         "parser": parse_yes_no,
     },
+        {
+        "group": None,
+        "field": "can_be_claimed_as_dependent",
+        "text": "Can someone else list you as a dependent on their tax return? "
+                "Please answer yes or no.",
+        "parser": parse_yes_no,
+    },
 ]
 
 
