@@ -1,11 +1,8 @@
 """Intake agent (P3). The only agent that talks to the taxpayer."""
 from __future__ import annotations
+from langgraph.types import interrupt
 
-# 要问的问题,按顺序排列。每个问题只问一件事。
-# field: 答案存进 intake 的哪个位置
-# text:  用通俗的话问用户
 
-# 用户说的话 -> Rules 能读懂的值
 FILING_STATUS_CHOICES = {
     "single": "single",
     "married": "mfj",
@@ -172,3 +169,22 @@ def run(state: dict) -> dict:
         "session_summary": state.get("session_summary") or "",
         "open_questions": [question["field"]] if question else [],
     }
+
+
+def run_interactive(state: dict) -> dict:
+    intake = state.get("intake") or {}
+    flags = list(state.get("flags") or [])
+
+    question = next_question(intake)
+    if question is None:
+        return {"intake": intake, "flags": flags, "open_questions": []}
+
+    reply = interrupt({
+        "type": "intake",
+        "question": question["text"],
+        "fields": [field_path(question)],
+    })
+    result = handle_answer(
+        {"intake": intake, "flags": flags}, reply["answer"], len(flags) + 1
+    )
+    return {"intake": result["intake"], "flags": result["flags"]}
