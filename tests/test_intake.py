@@ -34,7 +34,8 @@ def test_questions_asked_in_order():
 
 def test_false_answer_is_not_asked_again():
     intake = {"filing_status": "single",
-              "taxpayer": {"birth_date": "1958-03-05", "blind": False}}
+              "taxpayer": {"birth_date": "1958-03-05", "blind": False},
+              "dual_status_alien": False}
     assert next_question(intake) is None
 
 
@@ -49,3 +50,10 @@ def test_unclear_answer_raises_uncertain_flag():
     result = run({"latest_answer": "widowed"})
     assert result["intake"] == {}
     assert result["flags"][0]["type"] == "uncertain_answer"
+
+def test_dual_status_question_is_asked_last_and_saved():
+    intake = {"filing_status": "single",
+              "taxpayer": {"birth_date": "1958-03-05", "blind": False}}
+    assert next_question(intake)["field"] == "dual_status_alien"
+    result = run({"intake": intake, "latest_answer": "no"})
+    assert result["intake"]["dual_status_alien"] is False
