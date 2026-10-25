@@ -46,6 +46,20 @@ def record_answer(intake: dict, field: str, answer: str) -> dict:
     updated[field] = answer
     return updated
 
+from datetime import datetime, timezone
+
+
+def make_flag(flag_type: str, turn_id: int, excerpt: str = "") -> dict:
+    """Build a flag record that matches the IntakeFlag contract in state.py."""
+    now = datetime.now(timezone.utc)
+    return {
+        "id": f"flag_{turn_id}_{flag_type}",
+        "type": flag_type,
+        "turn_id": turn_id,
+        "excerpt": excerpt,
+        "raised_at": now.isoformat(),
+    }
+
 def run(state: dict) -> dict:
     """Read the state and return only the fields Intake may write."""
     intake = state.get("intake") or {}
