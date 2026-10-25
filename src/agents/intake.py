@@ -36,6 +36,19 @@ def parse_yes_no(answer: str) -> bool | None:
         return False
     return None
 
+import re
+
+SSN_PATTERN = re.compile(r"9\d{2}-?\d{2}-?\d{4}")
+
+
+def parse_ssn(answer: str) -> str | None:
+    """Accept only a 900-series test SSN. Anything else returns None."""
+    text = answer.strip()
+    if SSN_PATTERN.fullmatch(text):
+        digits = text.replace("-", "")
+        return f"{digits[:3]}-{digits[3:5]}-{digits[5:]}"
+    return None
+
 ADVICE_PHRASES = (
     "should i", "can i deduct", "would i pay less", "is it better",
     "roth", "how can i save", "lower my tax", "worth it to",
