@@ -100,6 +100,24 @@ def handle_filing_status_answer(state: dict, answer: str, turn_id: int) -> dict:
         intake = record_answer(intake, "filing_status", value)
 
     return {"intake": intake, "flags": flags}
+def handle_answer(state: dict, answer: str, turn_id: int) -> dict:
+    """Process one answer for whichever question is currently open."""
+    intake = state.get("intake") or {}
+    flags = list(state.get("flags") or [])
+
+    question = next_question(intake)
+    if question is None:
+        return {"intake": intake, "flags": flags}
+
+    value = question["parser"](answer)
+    if value is None:
+        flags.append(make_flag("uncertain_answer", turn_id, answer))
+    elif question["group"]:
+        intake = record_nested_answer(intake, question["group"], question["field"], value)
+    else:
+        intake = record_answer(intake, question["field"], value)
+
+    return {"intake": intake, "flags": flags}
 
 def run(state: dict) -> dict:
     """Read the state and return only the fields Intake may write."""
@@ -109,7 +127,7 @@ def run(state: dict) -> dict:
     answer = state.get("latest_answer")
     if answer is not None:
         turn_id = len(flags) + 1
-        result = handle_filing_status_answer(state, answer, turn_id)
+        result = handle_answer(state, answer, turn_id)
         intake = result["intake"]
         flags = result["flags"]
 
