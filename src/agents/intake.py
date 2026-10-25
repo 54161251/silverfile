@@ -19,6 +19,16 @@ def parse_filing_status(answer: str) -> str | None:
     """Turn what the user said into one of single/mfj/mfs/hoh/qss, or None."""
     return FILING_STATUS_CHOICES.get(answer.strip().lower())
 
+def parse_birth_date(answer: str) -> str | None:
+    """Turn a date like 03/05/1958 or 1958-03-05 into YYYY-MM-DD, or None."""
+    text = answer.strip()
+    for pattern in ("%Y-%m-%d", "%m/%d/%Y", "%B %d, %Y"):
+        try:
+            return datetime.strptime(text, pattern).date().isoformat()
+        except ValueError:
+            continue
+    return None
+
 
 QUESTIONS = [
     {
