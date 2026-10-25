@@ -12,7 +12,6 @@ FILING_STATUS_CHOICES = {
     "married filing jointly": "mfj",
     "married filing separately": "mfs",
     "head of household": "hoh",
-    "widowed": "qss",
 }
 
 
