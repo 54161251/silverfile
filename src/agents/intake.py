@@ -76,11 +76,20 @@ def handle_filing_status_answer(state: dict, answer: str, turn_id: int) -> dict:
 def run(state: dict) -> dict:
     """Read the state and return only the fields Intake may write."""
     intake = state.get("intake") or {}
+    flags = list(state.get("flags") or [])
+
+    answer = state.get("latest_answer")
+    if answer is not None:
+        turn_id = len(flags) + 1
+        result = handle_filing_status_answer(state, answer, turn_id)
+        intake = result["intake"]
+        flags = result["flags"]
+
     question = next_question(intake)
     return {
         "intake": intake,
         "user_inputs": state.get("user_inputs") or {},
-        "flags": state.get("flags") or [],
+        "flags": flags,
         "session_summary": state.get("session_summary") or "",
         "open_questions": [question["field"]] if question else [],
     }
