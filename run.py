@@ -13,7 +13,8 @@ def production_adapters():
     result, missing = {}, []
     for name in ["intake", "extraction", "rules", "computation", "review"]:
         try:
-            result[name] = importlib.import_module(f"src.agents.{name}").run
+            module = importlib.import_module(f"src.agents.{name}")
+            result[name] = module.run_interactive if name == "intake" else module.run
         except ModuleNotFoundError as exc:
             if exc.name != f"src.agents.{name}":
                 raise

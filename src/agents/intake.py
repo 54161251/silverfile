@@ -221,6 +221,8 @@ def run_interactive(state: dict) -> dict:
                 return {"intake": intake, "flags": flags, "open_questions": [],
                     "session_summary": build_summary(intake)}
 
+
+
         reply = interrupt({
             "type": "intake",
             "question": (notice + " " if notice else "") + question["text"],
@@ -234,5 +236,7 @@ def run_interactive(state: dict) -> dict:
         if any(f["type"] == "advice_request" for f in flags[before:]):
             notice = ESCALATION_CATALOG["E4"]["user_message"]
             continue
+        next_q = next_question(intake)
         return {"intake": intake, "flags": flags,
-                "session_summary": build_summary(intake)}
+                "session_summary": build_summary(intake),
+                "open_questions": [field_path(next_q)] if next_q else []}

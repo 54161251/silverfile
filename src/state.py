@@ -153,6 +153,10 @@ class GraphState(TypedDict, total=False):
     iterations: int
     total_handoffs: int
     pending_escalation: str
+    progress_fingerprints: list[str]
+    stalled_handoff_history: list[list[str]]
+    handoffs_without_progress: int
+    checked_intake_flags: list[str]
 
 
 AGENT_FIELDS = {

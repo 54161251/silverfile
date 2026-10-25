@@ -41,5 +41,6 @@ def apply_resolution(state, raw):
     if payload.option in CLOSING_OPTIONS:
         result["status"] = "closed"
     elif record["code"] in {"E9", "E10"}:
-        result.update(iterations=0, handoff_history=[], total_handoffs=0)
+        result.update(iterations=0, handoff_history=[], total_handoffs=0,
+                      stalled_handoff_history=[], handoffs_without_progress=0)
     return result

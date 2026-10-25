@@ -16,7 +16,8 @@ a note. The runtime timestamps the decision and rechecks affected downstream wor
 
 Review can return findings to the responsible agent. Three revision attempts are the
 maximum, and a separate handoff guard detects a directed pair repeated three times in
-the last ten transfers. Either condition pauses for staff review instead of running
+the last ten stalled transfers. New accepted structured answers reset the stall window;
+changing prompts or timestamps does not. Either condition pauses for staff review instead of running
 indefinitely. Tests demonstrate actual overlapping extraction workers, persistent human
 resume, review send-backs, and both guards. A failure mode is inconsistent document
 versions: conflicting same-ID extraction results are deliberately rejected; supersession

@@ -2,7 +2,7 @@
 
 A shared workspace for the team's seven-person SilverFile project: six agents plus a dashboard/demo workstream.
 
-**Status checked October 24, 2026: orchestration, Rules, Computation, Review, the staff dashboard, form rendering, CI and Docker configuration are present. Production Intake and Extraction are still missing; a complete taxpayer-to-draft workflow is not yet demonstrated.**
+**Status checked October 25, 2026: orchestration, basic interactive Intake, Rules, Computation, Review, the staff dashboard, form rendering, CI and Docker configuration are present. Intake's remaining tax questions and production Extraction are still pending; a complete taxpayer-to-draft workflow is not yet demonstrated.**
 
 ## Current implementation
 
@@ -10,15 +10,15 @@ A shared workspace for the team's seven-person SilverFile project: six agents pl
 |---|---|---|---|
 | P1 — Kaiwen | Contracts, orchestration, checkpoints, interrupts, guards | Implemented; document correction/versioning needs integration | [P1 handoff](docs/IMPLEMENTATION_NOTES.md) |
 | P2 — Jad | Computation and deterministic MCP tools | Implemented; golden returns need human verification | [Computation](docs/P2_COMPUTATION.md) |
-| P3 — Zimo | Conversational Intake, memory and context metrics | Production adapter and taxpayer page pending | [Tasks](TASKS.md) |
+| P3 — Zimo | Conversational Intake, memory and context metrics | Five-question interactive Intake connected; remaining questions, taxpayer page and metrics pending | [Intake integration](docs/P1_INTAKE_HANDOFF.md) |
 | P4 — Christina | W-2 image extraction, security and fixtures | Production adapter and assignment demo fixtures pending | [Tasks](TASKS.md) |
 | P5 — Lluc | Eligibility, Rules and escalations | Implemented | [Rules interface](docs/p5_rules_interface.md) |
 | P6 — Ziling | Review, CI and Docker | Implemented; full grader simulation pending | [Review](docs/P6_REVIEW.md) |
 | P7 — David | Staff dashboard, human resolution, HTML/PDF output | Implemented; final demo video pending | [Dashboard](docs/P7_DASHBOARD.md) |
 
 “Implemented” describes a component, not acceptance of the complete application. The
-offline graph still uses placeholder Intake, Extraction, Computation and Review adapters;
-its real Rules agent runs, but it does not calculate a tax return. The dashboard's
+offline graph uses real interactive Intake and Rules, with placeholder Extraction,
+Computation and Review adapters; it does not calculate a tax return. The dashboard's
 **Sample returns** tab separately invokes real Computation on golden data. These are
 different demonstrations.
 
@@ -61,7 +61,7 @@ The P1 routing topology is implemented; the offline demo still uses placeholder 
 
 | Location | Purpose |
 |---|---|
-| `src/agents/` | Production Rules, Computation and Review; Intake/Extraction pending |
+| `src/agents/` | Basic interactive Intake, Rules, Computation and Review; Extraction pending |
 | `src/graph.py`, `src/memory.py`, `src/state.py` | Routing, SQLite sessions and shared contracts |
 | `src/demo_agents.py` | Explicit offline placeholders, separate from production adapters |
 | `streamlit_app.py`, `src/dashboard/` | Staff UI, resolution, provenance and form rendering |
@@ -92,8 +92,8 @@ python -m pytest -q
 python run.py start --demo --thread-id first-demo
 ```
 
-The demo uses synthetic structured documents, the real Rules agent, and placeholder
-Intake/Extraction/Computation/Review adapters. It ends as **scaffold_complete**, not a
+The demo uses synthetic structured documents, real Intake and Rules, and placeholder
+Extraction/Computation/Review adapters. It ends as **scaffold_complete**, not a
 completed tax return. No API key is needed. See [persistent human-review walkthrough](demo/P1_WALKTHROUGH.md)
 and [integration handoff](docs/IMPLEMENTATION_NOTES.md).
 
@@ -150,7 +150,7 @@ for actual outcomes. Cases g02–g04 still need 1099-R distribution-code fixture
 
 ## Integration and submission work still open
 
-- Connect real Intake and Extraction, the taxpayer page, Computation and Review in one workflow.
+- Complete Intake's required tax questions and connect Extraction, the taxpayer page, Computation and Review in one workflow.
 - Define corrected-document replacement/versioning so corrections cannot double-count income.
 - Connect staff-entered 1099-R taxable amounts to Computation (E3); the dashboard alone is insufficient.
 - Move remaining income summation and direct-input rounding out of Computation into MCP tools.
