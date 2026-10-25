@@ -213,12 +213,13 @@ def run(state: dict) -> dict:
 def run_interactive(state: dict) -> dict:
     intake = state.get("intake") or {}
     flags = list(state.get("flags") or [])
-    notice = ""
+    notice = build_summary(intake)
 
     while True:
         question = next_question(intake)
         if question is None:
-            return {"intake": intake, "flags": flags, "open_questions": []}
+                return {"intake": intake, "flags": flags, "open_questions": [],
+                    "session_summary": build_summary(intake)}
 
         reply = interrupt({
             "type": "intake",
@@ -233,4 +234,5 @@ def run_interactive(state: dict) -> dict:
         if any(f["type"] == "advice_request" for f in flags[before:]):
             notice = ESCALATION_CATALOG["E4"]["user_message"]
             continue
-        return {"intake": intake, "flags": flags}
+        return {"intake": intake, "flags": flags,
+                "session_summary": build_summary(intake)}
