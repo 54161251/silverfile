@@ -1,6 +1,7 @@
 """Rule-based control only: no extraction, tax math, or taxpayer conversation (B1)."""
 from collections import Counter
 from datetime import datetime, timezone
+from src.progress import flag_keys, guard_state
 
 REVIEW_LIMIT = 3
 HANDOFF_REPEAT_LIMIT = 3
@@ -30,13 +31,18 @@ def orchestrate(state):
         target = "intake"
     elif last == "intake":
         done = {doc["doc_id"] for doc in state.get("documents", [])}
-        target = "dispatch" if any(u["doc_id"] not in done for u in state.get("uploads", [])) else "rules"
+        if set(flag_keys(state)) - set(state.get("checked_intake_flags", [])):
+            target = "rules"  # New advice/uncertainty/exploitation flags must not wait for the questionnaire.
+        elif state.get("open_questions"):
+            target = "intake"
+        else:
+            target = "dispatch" if any(u["doc_id"] not in done for u in state.get("uploads", [])) else "rules"
     elif last == "extraction":
         target = "rules"
     elif last in {"rules", "human"}:
         if last == "human":
             target = "rules"
-        elif state.get("eligibility", {}).get("missing"):
+        elif state.get("eligibility", {}).get("missing") or state.get("open_questions"):
             target = "intake"
         elif not state.get("scope", {}).get("in_scope") or not state.get("filing_status_validated"):
             raise ValueError("Rules must report missing inputs or an escalation when blocked")
@@ -65,9 +71,10 @@ def orchestrate(state):
         raise ValueError("Unknown agent completion")
     pair = [last, target]
     history = (state.get("handoff_history", []) + [pair])[-HANDOFF_WINDOW:]
-    repeated = max(Counter(map(tuple, history)).values()) >= HANDOFF_REPEAT_LIMIT
+    progress = guard_state(state, pair, HANDOFF_WINDOW)
+    repeated = max(Counter(map(tuple, progress["stalled_handoff_history"])).values()) >= HANDOFF_REPEAT_LIMIT
     total = state.get("total_handoffs", 0) + 1
-    if repeated or total > TOTAL_LIMIT:
+    if repeated or progress["handoffs_without_progress"] > TOTAL_LIMIT:
         return {"escalations": [guard_escalation(state, "E10")], "next_agent": "orchestrator"}
-    return {"next_agent": target, "handoff_history": history, "iterations": iterations,
+    return progress | {"next_agent": target, "handoff_history": history, "iterations": iterations,
             "total_handoffs": total, "status": "extracting" if target == "dispatch" else target}

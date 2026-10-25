@@ -54,11 +54,11 @@ def test_review_sendback_recomputes_then_reaudits(tmp_path):
 
 def test_missing_input_pauses_and_resumes_intake(tmp_path):
     inputs = sample()
-    del inputs["intake"]["taxpayer"]["ssn"]
+    del inputs["intake"]["taxpayer"]["birth_date"]
     with open_sessions(tmp_path / "state.db", adapters()) as sessions:
         result = sessions.start("missing", inputs, mode="demo")
         assert result["__interrupt__"][0].value["type"] == "intake"
-        result = sessions.resume("missing", {"intake.taxpayer.ssn": "901-11-1111"})
+        result = sessions.resume("missing", {"answer": "June 1, 1955"})
         assert result["status"] == "scaffold_complete"
 
 
@@ -88,7 +88,7 @@ def test_D5_actual_graph_caps_review_revisions(tmp_path, monkeypatch):
 
 def test_R17_bad_resume_is_rejected_before_checkpoint(tmp_path):
     inputs = sample()
-    del inputs["intake"]["taxpayer"]["ssn"]
+    del inputs["intake"]["taxpayer"]["birth_date"]
     with open_sessions(tmp_path / "state.db", adapters()) as sessions:
         sessions.start("invalid", inputs, mode="demo")
         before = sessions.snapshot("invalid")

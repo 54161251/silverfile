@@ -1,23 +1,7 @@
-"""Offline walking skeleton only. No OCR, LLM, tax math, or valid return is claimed."""
+"""Real P3 Intake + Rules, with offline extraction/computation/review placeholders."""
 from copy import deepcopy
-from langgraph.types import interrupt
 from src.agents.rules import run as rules_run
-
-
-def intake(state):
-    missing = state.get("eligibility", {}).get("missing", []) + state.get("open_questions", [])
-    data = deepcopy(state.get("intake", {}))
-    if missing:
-        reply = interrupt({"type": "intake", "fields": missing, "demo": True})
-        for path in missing:
-            if not path.startswith("intake.") or path not in reply:
-                raise ValueError("Demo intake needs an answer for each requested intake path")
-            cursor = data
-            parts = path.split(".")[1:]
-            for part in parts[:-1]:
-                cursor = cursor.setdefault(part, {})
-            cursor[parts[-1]] = reply[path]
-    return {"intake": data, "open_questions": []}
+from src.agents.intake import run_interactive
 
 
 def extraction(state):
@@ -35,13 +19,14 @@ def review(state):
 
 
 def adapters():
-    return {"intake": intake, "extraction": extraction, "rules": rules_run,
+    return {"intake": run_interactive, "extraction": extraction, "rules": rules_run,
             "computation": computation, "review": review}
 
 
 def sample(hitl=False):
     return {"intake": {"filing_status": "single",
                         "taxpayer": {"birth_date": "1955-06-01", "ssn": "901-11-1111", "blind": False},
+                        "dual_status_alien": False, "can_be_claimed_as_dependent": False,
                         "document_inventory": ["W-2"],
                         "refund": {"method": "direct_deposit", "account_owner": "unknown" if hitl else "taxpayer"}},
             "uploads": [{"doc_id": name, "form": "W-2", "boxes": {"1": amount, "2": 100},

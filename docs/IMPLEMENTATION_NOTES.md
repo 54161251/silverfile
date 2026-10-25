@@ -7,8 +7,10 @@
 - LangGraph Send fan-out, real concurrent workers, and deterministic aggregation.
 - SQLite checkpointer with session IDs and reopen/resume support (A2).
 - LangGraph interrupt for STOP and GATE; staff identity, allowed option, note and timestamp.
-- Review limit: at most three revisions (E9). Repeated directed handoff pair: three
-  occurrences in the last ten handoffs (E10). Total handoffs also limited to 80.
+- Review limit: at most three revisions (E9). Without new accepted data, a directed handoff
+  pair repeated three times in the last ten stalled handoffs triggers E10. The fallback
+  limit is 80 handoffs without progress, not 80 across the lifetime of a valid questionnaire.
+  Trace handoff counts remain cumulative. See P1_INTAKE_HANDOFF.md for progress signals.
 - Derived lines are invalidated after staff resolution before Rules and Computation rerun.
 - Readable CLI summaries omit SSNs and raw intake data.
 
@@ -16,8 +18,9 @@
 
 P2: src/agents/computation.py run(state) returns lines keyed by form line, each a
 Provenance record. Use deterministic MCP tools. Return open_questions for missing inputs.
-P3: src/agents/intake.py run(state) may use interrupt for taxpayer input. Return intake,
-flags and open_questions; inspect eligibility.missing. Preserve prior answers yourself.
+P3: the registry calls src/agents/intake.py run_interactive(state). Use interrupt for
+taxpayer input; return intake, flags and full-path open_questions. Inspect eligibility.missing
+for questions beyond the initial questionnaire. Preserve prior answers yourself.
 P4: src/agents/extraction.py receives uploads containing exactly one task. Return one
 ExtractedDocument with that task's doc_id. Structured demo copying is not OCR.
 P5: existing Rules module is used directly; escalation upserts preserve resolutions.

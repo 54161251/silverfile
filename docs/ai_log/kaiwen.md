@@ -17,6 +17,19 @@ so bad resume payloads are rejected before checkpointing; changed pytest's scrat
 after a sandbox temp-directory failure. No API calls, tax calculations or token metrics
 were fabricated. Docker engine is unavailable; container checks remain pending.
 
+## October 25 — interactive Intake integration
+
+Codex inspected Zimo's p3-intake branch, preserved those commits, connected run_interactive,
+and supplied its missing next-question update. P1 now routes on open_questions and uses
+semantic progress to avoid false E10 interruptions during normal Q&A. Tests include the
+real P3 module and persisted full graph, 90 accepted answers, stalled/oscillating answers,
+and priority handling of new risk flags. Final verification is recorded in the PR.
+The five-question Intake remains incomplete for full assignment scope.
+Local full-suite result: 233 passed and 610 subtests passed on Python 3.13. Fixed the
+dashboard waiting-session fixture to omit a supported birth-date question instead of
+the old placeholder's SSN question. The new integration test preserves the current
+five-question limitation rather than claiming that missing tax questions are implemented.
+
 Owner requested self-service merging: confirmed six collaborators and no branch rules,
 then updated repository workflow documents. The source Google Doc was not edited.
 

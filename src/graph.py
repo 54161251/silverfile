@@ -6,6 +6,7 @@ from langgraph.types import Send, interrupt
 
 from src.human import apply_resolution
 from src.orchestration import orchestrate
+from src.progress import flag_keys
 from src.state import AGENT_FIELDS, GraphState, validate_update
 
 
@@ -20,6 +21,8 @@ def build_graph(checkpointer, agents):
         def node(state):
             # Copies enforce read-only shared state, even if an adapter mutates its input.
             update = validate_update(name, agents[name](deepcopy(state)))
+            if name == "rules":
+                update["checked_intake_flags"] = flag_keys(state)
             return update | {"last_agent": name}
         return node
 

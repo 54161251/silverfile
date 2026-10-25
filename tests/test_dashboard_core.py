@@ -17,7 +17,7 @@ def db(tmp_path):
         sessions.start("clean-1", sample(), mode="demo")
         sessions.start("hitl-1", sample(hitl=True), mode="demo")
         missing = sample()
-        del missing["intake"]["taxpayer"]["ssn"]
+        del missing["intake"]["taxpayer"]["birth_date"]  # Real P3 question, not the retired fixture adapter.
         sessions.start("waiting-1", missing, mode="demo")
     return path
 
@@ -30,7 +30,7 @@ def test_B7_lists_every_session_grouped_for_staff(db):
     assert rows["hitl-1"].open_codes == ["E6"]
     assert rows["clean-1"].group == "completed"
     assert rows["waiting-1"].group == "waiting_taxpayer"
-    assert "intake.taxpayer.ssn" in rows["waiting-1"].intake_fields
+    assert "intake.taxpayer.birth_date" in rows["waiting-1"].intake_fields
     assert [r.group for r in Store(db).summaries()][0] == "needs_staff"  # queue first
 
 
