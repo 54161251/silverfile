@@ -1,4 +1,6 @@
 from src.agents.intake import (
+    QUESTIONS,
+    field_path,
     next_question,
     parse_birth_date,
     parse_filing_status,
@@ -58,3 +60,8 @@ def test_dual_status_question_is_asked_last_and_saved():
     assert next_question(intake)["field"] == "dual_status_alien"
     result = run({"intake": intake, "latest_answer": "no"})
     assert result["intake"]["dual_status_alien"] is False
+
+def test_field_paths_are_full_paths():
+    paths = [field_path(q) for q in QUESTIONS]
+    assert "intake.filing_status" in paths
+    assert "intake.taxpayer.birth_date" in paths

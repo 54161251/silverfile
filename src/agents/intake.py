@@ -75,6 +75,10 @@ QUESTIONS = [
     },
 ]
 
+def field_path(question: dict) -> str:
+    """Full path used by Rules and the staff UI, e.g. intake.taxpayer.birth_date."""
+    parts = ["intake", question["group"], question["field"]]
+    return ".".join(p for p in parts if p)
 
 def _is_filled(intake: dict, question: dict) -> bool:
     group, field = question["group"], question["field"]
