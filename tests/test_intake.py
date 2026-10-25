@@ -7,6 +7,7 @@ from src.agents.intake import (
     parse_yes_no,
     run,
     run_interactive,
+    build_summary,
 )
 
 
@@ -114,4 +115,14 @@ def test_advice_request_gets_polite_notice_and_same_question():
     payload = second["__interrupt__"][0].value
     assert "can't advise" in payload["question"]
     assert payload["fields"] == ["intake.filing_status"]
+
+def test_summary_lists_done_and_remaining():
+    text = build_summary({"filing_status": "single"})
+    assert "your filing status" in text
+    assert "Still to go" in text
+    assert "your date of birth" in text.split("Still to go")[1]
+
+
+def test_summary_is_empty_when_nothing_answered():
+    assert build_summary({}) == ""
     

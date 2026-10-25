@@ -103,6 +103,28 @@ def next_question(intake: dict) -> dict | None:
             return question
     return None
 
+LABELS = {
+    "intake.filing_status": "your filing status",
+    "intake.taxpayer.birth_date": "your date of birth",
+    "intake.taxpayer.blind": "whether you are blind",
+    "intake.dual_status_alien": "whether you were a nonresident for part of 2025",
+    "intake.can_be_claimed_as_dependent": "whether someone else can claim you as a dependent",
+}
+
+
+def build_summary(intake: dict) -> str:
+    """Plain-language recap of what is already answered and what is left."""
+    done, left = [], []
+    for question in QUESTIONS:
+        label = LABELS[field_path(question)]
+        (done if _is_filled(intake, question) else left).append(label)
+    if not done:
+        return ""
+    text = "So far we have covered: " + ", ".join(done) + "."
+    if left:
+        text += " Still to go: " + ", ".join(left) + "."
+    return text
+
 def record_answer(intake: dict, field: str, answer: str) -> dict:
     """Return a new intake dict with the answer saved. Old answers are kept."""
     updated = dict(intake)
