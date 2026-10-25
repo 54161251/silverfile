@@ -4,6 +4,23 @@ from __future__ import annotations
 # 要问的问题,按顺序排列。每个问题只问一件事。
 # field: 答案存进 intake 的哪个位置
 # text:  用通俗的话问用户
+
+# 用户说的话 -> Rules 能读懂的值
+FILING_STATUS_CHOICES = {
+    "single": "single",
+    "married": "mfj",
+    "married filing jointly": "mfj",
+    "married filing separately": "mfs",
+    "head of household": "hoh",
+    "widowed": "qss",
+}
+
+
+def parse_filing_status(answer: str) -> str | None:
+    """Turn what the user said into one of single/mfj/mfs/hoh/qss, or None."""
+    return FILING_STATUS_CHOICES.get(answer.strip().lower())
+
+
 QUESTIONS = [
     {
         "field": "filing_status",
