@@ -249,8 +249,9 @@ def detail(store: Store, thread_id: str, staff) -> None:
     if summary.pending:
         resolve_panel(store, summary, staff)
     elif summary.intake_fields:
-        st.info("Waiting for the taxpayer to answer: " + ", ".join(f"`{f}`" for f in summary.intake_fields),
-                icon=":material/hourglass_top:")
+        asked = f"\u201c{summary.question}\u201d  \n" if summary.question else ""
+        st.info(f"Waiting for the taxpayer to answer: {asked}"
+                + ", ".join(f"`{f}`" for f in summary.intake_fields), icon=":material/hourglass_top:")
 
     form_tab, esc_tab, doc_tab, rules_tab, trace_tab = st.tabs(
         ["Draft form", "Escalations", "Documents", "Rules & review", "Trace"])

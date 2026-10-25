@@ -9,7 +9,14 @@ from streamlit.testing.v1 import AppTest  # noqa: E402
 from src.demo_agents import adapters, sample  # noqa: E402
 from src.memory import open_sessions  # noqa: E402
 
-APP = str(Path(__file__).resolve().parents[1] / "streamlit_app.py")
+ROOT = Path(__file__).resolve().parents[1]
+APP = str(ROOT / "streamlit_app.py")
+# The taxpayer page is the app's default page, so these tests load the staff page directly.
+STAFF_PAGE = "import sys\nsys.path.insert(0, %r)\nfrom src.dashboard.app import page\npage()\n" % str(ROOT)
+
+
+def staff_app():
+    return AppTest.from_string(STAFF_PAGE)
 
 
 @pytest.fixture
@@ -31,14 +38,14 @@ def run(app):
 
 
 def test_B7_overview_counts_and_queue(env):
-    app = run(AppTest.from_file(APP))
+    app = run(staff_app())
     metrics = {m.label: m.value for m in app.metric}
     assert metrics["Needs staff"] == "1" and metrics["Draft ready"] == "1"
     assert any(b.label == "Open & resolve" for b in app.button)
 
 
 def test_B7_resolve_buttons_hidden_until_staff_signs_in(env):
-    app = AppTest.from_file(APP)
+    app = staff_app()
     app.query_params["thread"] = "hitl-1"
     run(app)
     assert not [b for b in app.button if b.label == "Resolve and resume"]
@@ -46,7 +53,7 @@ def test_B7_resolve_buttons_hidden_until_staff_signs_in(env):
 
 
 def test_E6_staff_resolves_hitl_in_dashboard_and_session_resumes(env):
-    app = AppTest.from_file(APP)
+    app = staff_app()
     app.query_params["thread"] = "hitl-1"
     run(app)
     app.sidebar.text_input[0].input("demo_staff")
@@ -65,7 +72,7 @@ def test_E6_staff_resolves_hitl_in_dashboard_and_session_resumes(env):
 
 
 def test_B7_wrong_passcode_keeps_dashboard_read_only(env):
-    app = run(AppTest.from_file(APP))
+    app = run(staff_app())
     app.sidebar.text_input[0].input("demo_staff")
     app.sidebar.text_input[1].input("guess")
     app.sidebar.button[0].click()
@@ -75,5 +82,5 @@ def test_B7_wrong_passcode_keeps_dashboard_read_only(env):
 
 
 def test_sample_returns_render_without_errors(env):
-    app = run(AppTest.from_file(APP))
+    app = run(staff_app())
     assert any(s.label == "Sample return" for s in app.selectbox)

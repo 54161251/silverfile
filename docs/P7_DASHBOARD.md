@@ -40,6 +40,25 @@ If either staff variable is missing, sign-in is off and the dashboard is read-on
 4. `Store.resolve` checks the signed-in ID is `resolved_by`, validates the `ResumePayload` (contract #3), checks the escalation is still the pending one, and calls P1's `Sessions.resume`, i.e. `Command(resume=payload)`, with the adapters for the session's mode.
 5. P1's `apply_resolution` stamps `resolved_at`, keeps the record, and turns overrides into `human_resolution` provenance. The Escalations tab shows staff ID, time, decision and note.
 
+## Taxpayer page (P3's Intake contract)
+
+`src/ui/taxpayer_page.py` is the app's default page. It follows docs/P1_INTAKE_HANDOFF.md: when the
+session pauses with `{"type": "intake", "question", "fields"}` it shows `question`, and it sends the
+reply as `sessions.resume(thread_id, {"answer": text})`.
+
+- **Answers are screened before sending** (`src/ui/answers.py`, A19/R17). The resume value is saved in
+  the checkpoint before Intake reads it, so screening has to happen in the UI. If the question asks
+  for an SSN, only a 900-series number is sent. Otherwise SSN-shaped numbers become `[SSN removed]`
+  and the taxpayer is told why. A test checks the SQLite file never contains the typed number.
+- **Accessibility (spec §4.3):** one question per screen; 20 px text (26 px for the question); a
+  labelled answer box with real Send and "I'm not sure" buttons; the question in an `aria-live`
+  region so screen readers announce it; plain-language status messages.
+- **Resumability:** each visit gets a code like `SF-7K3Q-9XPD` (no 0/O or 1/I/L). Entering it later
+  shows "What we have so far" and picks up at the next question.
+- **When staff step in,** the taxpayer sees only the neutral sentence from `rules.ESCALATION_CATALOG`.
+- **Documents:** uploads can only be attached when a session starts. Until P4's W-2 upload lands, a
+  new return starts from P1's synthetic household documents with every Intake answer removed.
+
 ## Form output (D7)
 
 - **HTML (primary).** `form_render.render_form` lays out the §3.1 lines in 1040-SR order. Hover a value for a one-line source summary. Click it for the full provenance record: kind, formula, inputs (each linked to its line in the downloaded HTML), source document and box, MCP tool and version, the `policy.md` citation with the cited text, who entered it and when. **Download HTML** saves a standalone copy.
@@ -62,8 +81,8 @@ Two staff members open the same escalation in two tabs. A second click after the
 
 | With | Item |
 |---|---|
-| P3 | The taxpayer page plugs in without editing P7 files: create `src/ui/taxpayer_page.py` with a `page()` function and `streamlit_app.py` adds it to the navigation. |
-| P4 / P6 | Please add the three variables above to `.env.example` and the Docker image. The app also needs port 8501 exposed. |
+| P3 | Please raise `ssn_volunteered` when an answer contains `[SSN removed]`, and mask flag excerpts (R17). Parsing is exact-match, so "Single." or "widowed" become E8 escalations; "widowed" is suggested by the first question but not parsed. |
+| P4 | A W-2 image upload on the taxpayer page needs the `uploads` record format Extraction expects. |
 | P1 | Demo adapters use a placeholder Computation, so demo sessions show no lines. Wiring `src.agents.computation.run` into `demo_agents.adapters()` would make every demo session show a real draft here, with no dashboard change. |
 | P1 / P2 / P5 | E3 "preparer enters the taxable amount": `apply_resolution` accepts only `intake.*` and `user_inputs.<line>`, and Computation reads 4b/5b from documents, so a human-entered 1099-R taxable amount has no path into the computed lines yet. |
 | P2 | Display labels: on the 2025 form line 7 is "7a", line 27 is "27a", and line 11b repeats 11a. Also, `computation.py` adds the other-income lines with Python `sum()` before calling `taxable_social_security`, which is arithmetic outside the MCP tools (R9). |
