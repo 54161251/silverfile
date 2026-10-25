@@ -1,6 +1,7 @@
 """Intake agent (P3). The only agent that talks to the taxpayer."""
 from __future__ import annotations
 from langgraph.types import interrupt
+from src.agents.rules import ESCALATION_CATALOG
 
 
 FILING_STATUS_CHOICES = {
