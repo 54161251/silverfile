@@ -29,6 +29,14 @@ def parse_birth_date(answer: str) -> str | None:
             continue
     return None
 
+def parse_yes_no(answer: str) -> bool | None:
+    """Turn yes/no style answers into True/False, or None if unclear."""
+    text = answer.strip().lower()
+    if text in ("yes", "y", "yeah", "yep", "i am", "i do"):
+        return True
+    if text in ("no", "n", "nope", "i am not", "i do not"):
+        return False
+    return None
 
 QUESTIONS = [
     {
@@ -43,6 +51,12 @@ QUESTIONS = [
         "field": "birth_date",
         "text": "What is your date of birth? For example: March 5, 1958.",
         "parser": parse_birth_date,
+    },
+    {
+        "group": "taxpayer",
+        "field": "blind",
+        "text": "Are you blind? Please answer yes or no.",
+        "parser": parse_yes_no,
     },
 ]
 
