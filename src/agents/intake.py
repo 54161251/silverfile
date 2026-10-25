@@ -24,6 +24,11 @@ def next_question(intake: dict) -> dict | None:
             return question
     return None
 
+def record_answer(intake: dict, field: str, answer: str) -> dict:
+    """Return a new intake dict with the answer saved. Old answers are kept."""
+    updated = dict(intake)
+    updated[field] = answer
+    return updated
 
 def run(state: dict) -> dict:
     """Read the state and return only the fields Intake may write."""
