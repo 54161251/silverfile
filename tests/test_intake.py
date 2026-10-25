@@ -8,6 +8,7 @@ from src.agents.intake import (
     run,
     run_interactive,
     build_summary,
+    parse_ssn
 )
 
 
@@ -38,7 +39,8 @@ def test_questions_asked_in_order():
 
 def test_false_answer_is_not_asked_again():
     intake = {"filing_status": "single",
-              "taxpayer": {"birth_date": "1958-03-05", "blind": False},
+                "taxpayer": {"birth_date": "1958-03-05", "blind": False,
+                           "ssn": "901-55-1234"},
               "dual_status_alien": False,
               "can_be_claimed_as_dependent": False}
     assert next_question(intake) is None
@@ -58,7 +60,8 @@ def test_unclear_answer_raises_uncertain_flag():
 
 def test_dual_status_question_is_asked_last_and_saved():
     intake = {"filing_status": "single",
-              "taxpayer": {"birth_date": "1958-03-05", "blind": False}}
+              "taxpayer": {"birth_date": "1958-03-05", "blind": False,
+                           "ssn": "901-55-1234"}}
     assert next_question(intake)["field"] == "dual_status_alien"
     result = run({"intake": intake, "latest_answer": "no"})
     assert result["intake"]["dual_status_alien"] is False
@@ -122,7 +125,6 @@ def test_summary_lists_done_and_remaining():
     assert "Still to go" in text
     assert "your date of birth" in text.split("Still to go")[1]
 
-
 def test_summary_is_empty_when_nothing_answered():
     assert build_summary({}) == ""
 
@@ -141,4 +143,9 @@ def test_resumed_session_shows_summary_first():
     question = first["__interrupt__"][0].value["question"]
     assert question.startswith("So far we have covered")
     assert "date of birth" in question
-    
+
+def test_ssn_accepts_only_900_series():
+    assert parse_ssn("901-55-1234") == "901-55-1234"
+    assert parse_ssn("901551234") == "901-55-1234"
+    assert parse_ssn("123-45-6789") is None
+    assert parse_ssn("banana") is None

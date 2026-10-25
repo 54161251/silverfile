@@ -96,6 +96,13 @@ QUESTIONS = [
                 "Please answer yes or no.",
         "parser": parse_yes_no,
     },
+        {
+        "group": "taxpayer",
+        "field": "ssn",
+        "text": "What is your Social Security number? For this practice system, "
+                "please use only a test number that starts with 9.",
+        "parser": parse_ssn,
+    },
 ]
 
 def field_path(question: dict) -> str:
@@ -119,6 +126,7 @@ def next_question(intake: dict) -> dict | None:
 LABELS = {
     "intake.filing_status": "your filing status",
     "intake.taxpayer.birth_date": "your date of birth",
+    "intake.taxpayer.ssn": "your Social Security number",
     "intake.taxpayer.blind": "whether you are blind",
     "intake.dual_status_alien": "whether you were a nonresident for part of 2025",
     "intake.can_be_claimed_as_dependent": "whether someone else can claim you as a dependent",
