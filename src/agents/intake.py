@@ -60,6 +60,19 @@ def make_flag(flag_type: str, turn_id: int, excerpt: str = "") -> dict:
         "raised_at": now.isoformat(),
     }
 
+def handle_filing_status_answer(state: dict, answer: str, turn_id: int) -> dict:
+    """Process one answer to the filing-status question."""
+    intake = state.get("intake") or {}
+    flags = list(state.get("flags") or [])
+
+    value = parse_filing_status(answer)
+    if value is None:
+        flags.append(make_flag("uncertain_answer", turn_id, answer))
+    else:
+        intake = record_answer(intake, "filing_status", value)
+
+    return {"intake": intake, "flags": flags}
+
 def run(state: dict) -> dict:
     """Read the state and return only the fields Intake may write."""
     intake = state.get("intake") or {}
