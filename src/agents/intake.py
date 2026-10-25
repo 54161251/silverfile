@@ -151,6 +151,10 @@ def handle_answer(state: dict, answer: str, turn_id: int) -> dict:
     if question is None:
         return {"intake": intake, "flags": flags}
 
+    if looks_like_advice_request(answer):
+        flags.append(make_flag("advice_request", turn_id, answer))
+        return {"intake": intake, "flags": flags}
+
     value = question["parser"](answer)
     if value is None:
         flags.append(make_flag("uncertain_answer", turn_id, answer))

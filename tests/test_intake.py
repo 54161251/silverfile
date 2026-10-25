@@ -87,4 +87,10 @@ def test_interrupt_asks_question_and_resumes_with_answer():
 
     final = graph.invoke(Command(resume={"answer": "single"}), config)
     assert final["intake"]["filing_status"] == "single"
+
+def test_advice_request_is_flagged_and_not_answered():
+    result = run({"latest_answer": "Should I convert my IRA to a Roth?"})
+    assert result["intake"] == {}
+    assert result["flags"][0]["type"] == "advice_request"
+    assert result["open_questions"] == ["filing_status"]
     
