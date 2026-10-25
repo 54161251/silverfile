@@ -6,6 +6,7 @@ from src.agents.intake import (
     parse_filing_status,
     parse_yes_no,
     run,
+    run_interactive,
 )
 
 
@@ -93,4 +94,24 @@ def test_advice_request_is_flagged_and_not_answered():
     assert result["intake"] == {}
     assert result["flags"][0]["type"] == "advice_request"
     assert result["open_questions"] == ["filing_status"]
+
+def test_advice_request_gets_polite_notice_and_same_question():
+    from langgraph.checkpoint.memory import MemorySaver
+    from langgraph.graph import END, START, StateGraph
+    from langgraph.types import Command
+
+    builder = StateGraph(dict)
+    builder.add_node("intake", run_interactive)
+    builder.add_edge(START, "intake")
+    builder.add_edge("intake", END)
+    graph = builder.compile(checkpointer=MemorySaver())
+    config = {"configurable": {"thread_id": "t2"}}
+
+    graph.invoke({}, config)
+    second = graph.invoke(
+        Command(resume={"answer": "Should I convert my IRA to a Roth?"}), config
+    )
+    payload = second["__interrupt__"][0].value
+    assert "can't advise" in payload["question"]
+    assert payload["fields"] == ["intake.filing_status"]
     

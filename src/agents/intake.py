@@ -191,17 +191,24 @@ def run(state: dict) -> dict:
 def run_interactive(state: dict) -> dict:
     intake = state.get("intake") or {}
     flags = list(state.get("flags") or [])
+    notice = ""
 
-    question = next_question(intake)
-    if question is None:
-        return {"intake": intake, "flags": flags, "open_questions": []}
+    while True:
+        question = next_question(intake)
+        if question is None:
+            return {"intake": intake, "flags": flags, "open_questions": []}
 
-    reply = interrupt({
-        "type": "intake",
-        "question": question["text"],
-        "fields": [field_path(question)],
-    })
-    result = handle_answer(
-        {"intake": intake, "flags": flags}, reply["answer"], len(flags) + 1
-    )
-    return {"intake": result["intake"], "flags": result["flags"]}
+        reply = interrupt({
+            "type": "intake",
+            "question": (notice + " " if notice else "") + question["text"],
+            "fields": [field_path(question)],
+        })
+        before = len(flags)
+        result = handle_answer(
+            {"intake": intake, "flags": flags}, reply["answer"], len(flags) + 1
+        )
+        intake, flags = result["intake"], result["flags"]
+        if any(f["type"] == "advice_request" for f in flags[before:]):
+            notice = ESCALATION_CATALOG["E4"]["user_message"]
+            continue
+        return {"intake": intake, "flags": flags}
