@@ -47,7 +47,10 @@ def orchestrate(state):
         elif not state.get("scope", {}).get("in_scope") or not state.get("filing_status_validated"):
             raise ValueError("Rules must report missing inputs or an escalation when blocked")
         else:
-            target = "computation"
+            # A flag can send Intake straight to Rules before any document is read;
+            # never compute until every upload has been extracted.
+            done = {doc["doc_id"] for doc in state.get("documents", [])}
+            target = "dispatch" if any(u["doc_id"] not in done for u in state.get("uploads", [])) else "computation"
     elif last == "computation":
         target = "intake" if state.get("open_questions") else "review"
     elif last == "review":
