@@ -180,7 +180,7 @@ LABELS = {
     "intake.dual_status_alien": "whether you were a nonresident for part of 2025",
     "intake.can_be_claimed_as_dependent": "whether someone else can claim you as a dependent",
     "intake.spouse.birth_date": "your spouse's date of birth",
-        "intake.spouse.ssn": "your spouse's Social Security number",
+    "intake.spouse.ssn": "your spouse's Social Security number",
     "intake.spouse.blind": "whether your spouse is blind",
 }
 
