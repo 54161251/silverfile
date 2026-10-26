@@ -40,6 +40,16 @@ class CleanReturns(unittest.TestCase):
                 result = review_return(computed(path))
                 self.assertEqual(result, {"review_verdict": "pass", "review_findings": []})
 
+    def test_E3_staff_entered_box_value_passes_review(self):
+        state = json.loads(GOLDEN[0].read_text(encoding="utf-8"))["state"]
+        state.setdefault("escalations", [])
+        w2 = next(d for d in state["documents"] if d["form"] == "W-2")
+        state["user_inputs"][f"{w2['doc_id']}.1"] = {"value": 12345, "kind": "human_resolution",
+                                                     "entered_by": "staff_jlee", "timestamp": NOW}
+        state["lines"] = compute_return(state, now=NOW)["lines"]
+        self.assertEqual(state["lines"]["1a"]["value"], 12345)
+        self.assertEqual(review_return(state), {"review_verdict": "pass", "review_findings": []})
+
     def test_output_stays_inside_the_review_contract(self):
         update = validate_update("review", review_return(computed(GOLDEN[0])))
         self.assertEqual(set(update), {"review_verdict", "review_findings"})
