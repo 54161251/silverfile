@@ -214,3 +214,21 @@ def test_spouse_question_only_asked_when_married_joint():
     assert next_question(single) is None
     assert next_question(joint)["field"] == "birth_date"
     assert field_path(next_question(joint)) == "intake.spouse.birth_date"
+
+def test_spouse_questions_only_asked_when_married_joint():
+    base = {"taxpayer": {"birth_date": "1958-03-05", "ssn": "901-55-1234",
+                         "blind": False},
+            "dual_status_alien": False,
+            "can_be_claimed_as_dependent": False}
+    single = dict(base, filing_status="single")
+    joint = dict(base, filing_status="mfj")
+    assert next_question(single) is None
+    paths = []
+    state = dict(joint)
+    for answer in ("March 5, 1959", "901-66-4321", "no"):
+        q = next_question(state)
+        paths.append(field_path(q))
+        state = run({"intake": state, "latest_answer": answer})["intake"]
+    assert paths == ["intake.spouse.birth_date", "intake.spouse.ssn",
+                     "intake.spouse.blind"]
+    assert next_question(state) is None

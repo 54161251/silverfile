@@ -134,6 +134,21 @@ QUESTIONS = [
         "parser": parse_birth_date,
         "only_if": is_married_joint,
     },
+        {
+        "group": "spouse",
+        "field": "ssn",
+        "text": "What is your spouse's Social Security number? For this practice "
+                "system, please use only a test number that starts with 9.",
+        "parser": parse_ssn,
+        "only_if": is_married_joint,
+    },
+    {
+        "group": "spouse",
+        "field": "blind",
+        "text": "Is your spouse blind? Please answer yes or no.",
+        "parser": parse_yes_no,
+        "only_if": is_married_joint,
+    },
 ]
 
 def field_path(question: dict) -> str:
@@ -165,6 +180,8 @@ LABELS = {
     "intake.dual_status_alien": "whether you were a nonresident for part of 2025",
     "intake.can_be_claimed_as_dependent": "whether someone else can claim you as a dependent",
     "intake.spouse.birth_date": "your spouse's date of birth",
+        "intake.spouse.ssn": "your spouse's Social Security number",
+    "intake.spouse.blind": "whether your spouse is blind",
 }
 
 
