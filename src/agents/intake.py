@@ -49,6 +49,15 @@ def parse_ssn(answer: str) -> str | None:
         return f"{digits[:3]}-{digits[3:5]}-{digits[5:]}"
     return None
 
+SSN_ANYWHERE = re.compile(r"\b\d{3}-?\d{2}-?\d{4}\b")
+
+
+def contains_ssn(answer: str) -> bool:
+    """True if the text contains something shaped like a Social Security number."""
+    return bool(SSN_ANYWHERE.search(answer))
+
+
+
 ADVICE_PHRASES = (
     "should i", "can i deduct", "would i pay less", "is it better",
     "roth", "how can i save", "lower my tax", "worth it to",
