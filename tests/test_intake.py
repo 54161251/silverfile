@@ -272,3 +272,18 @@ def test_refund_questions_are_conditional():
     assert field_path(next_question(deposit)) == "intake.refund.account_owner"
     mailed = dict(base, refund={"method": "check"})
     assert next_question(mailed) is None
+
+def test_session_resumes_after_closing_sqlite(tmp_path):
+    from src.demo_agents import adapters
+    from src.memory import open_sessions
+
+    path = tmp_path / "resume.db"
+    with open_sessions(path, adapters()) as sessions:
+        first = sessions.start("tue", {"intake": {}}, mode="demo")
+    assert first["__interrupt__"][0].value["fields"] == ["intake.filing_status"]
+
+    with open_sessions(path, adapters()) as sessions:
+        second = sessions.resume("tue", {"answer": "single"})
+    payload = second["__interrupt__"][0].value
+    assert payload["fields"] == ["intake.taxpayer.birth_date"]
+    assert payload["question"].startswith("So far we have covered")
