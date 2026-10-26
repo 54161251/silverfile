@@ -15,6 +15,7 @@ from src.agents.intake import (
     run_interactive,
     wants_to_go_back,
     previous_question,
+    dependent_question
 )
 
 
@@ -329,3 +330,13 @@ def test_go_back_reasks_previous_question_and_keeps_answers():
     assert "Of course" in payload["question"]
     final = graph.invoke(Command(resume={"answer": "married"}), config)
     assert final["intake"]["filing_status"] == "mfj"
+
+def test_rules_named_dependent_path_is_asked_and_saved():
+    intake = {"dependents": [{"name": "Sam"}]}
+    q = next_question(intake, ["intake.dependents.0.relationship"])
+    assert field_path(q) == "intake.dependents.0.relationship"
+    result = handle_answer({"intake": intake}, "grandson", 1, q)
+    assert result["intake"]["dependents"][0] == {"name": "Sam", "relationship": "grandson"}
+    ssn_q = dependent_question("intake.dependents.0.ssn")
+    result = handle_answer(result, "901-55-1234", 2, ssn_q)
+    assert result["intake"]["dependents"][0]["ssn"] == "901-55-1234"

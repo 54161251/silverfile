@@ -254,9 +254,14 @@ def field_path(question: dict) -> str:
     return ".".join(p for p in parts if p)
 
 def _is_filled(intake: dict, question: dict) -> bool:
+    index = question.get("dependent_index")
+    if index is not None:
+        people = intake.get("dependents") or []
+        return index < len(people) and people[index].get(question["field"]) not in (None, "")
     group, field = question["group"], question["field"]
     source = intake.get(group) or {} if group else intake
     return source.get(field) not in (None, "")
+
 import re as _re
 
 DEPENDENT_QUESTIONS = {
@@ -313,7 +318,7 @@ def next_question(intake: dict, missing: list | None = None) -> dict | None:
     Paths named by Rules (`missing`) come first; otherwise follow QUESTIONS order.
     """
     for path in missing or []:
-        question = question_for_path(path)
+        question = question_for_path(path) or dependent_question(path)
         if question is not None and not _is_filled(intake, question):
             return question
     for question in QUESTIONS:
@@ -438,6 +443,9 @@ def handle_answer(state: dict, answer: str, turn_id: int, question: dict | None 
     value = question["parser"](answer)
     if value is None:
         flags.append(make_flag("uncertain_answer", turn_id, answer))
+    elif question.get("dependent_index") is not None:
+        intake = record_dependent_answer(
+            intake, question["dependent_index"], question["field"], value)
     elif question["group"]:
         intake = record_nested_answer(intake, question["group"], question["field"], value)
     else:
