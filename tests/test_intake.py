@@ -183,3 +183,23 @@ def test_third_party_answer_is_flagged_and_not_saved():
     result = handle_answer({}, "I am answering for my mother", 1)
     assert result["intake"] == {}
     assert result["flags"][0]["type"] == "third_party_answering"
+
+def test_third_party_gets_notice_and_same_question():
+    from langgraph.checkpoint.memory import MemorySaver
+    from langgraph.graph import END, START, StateGraph
+    from langgraph.types import Command
+
+    builder = StateGraph(dict)
+    builder.add_node("intake", run_interactive)
+    builder.add_edge(START, "intake")
+    builder.add_edge("intake", END)
+    graph = builder.compile(checkpointer=MemorySaver())
+    config = {"configurable": {"thread_id": "t5"}}
+
+    graph.invoke({}, config)
+    second = graph.invoke(
+        Command(resume={"answer": "I am answering for my mother"}), config
+    )
+    payload = second["__interrupt__"][0].value
+    assert "colleague" in payload["question"]
+    assert payload["fields"] == ["intake.filing_status"]

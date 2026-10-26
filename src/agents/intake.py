@@ -291,6 +291,12 @@ def run_interactive(state: dict) -> dict:
             notice = ("You don't need to share your Social Security number "
                       "right now, so I have not saved it.")
             continue
+        
+        if any(f["type"] == "third_party_answering" for f in flags[before:]):
+            notice = ESCALATION_CATALOG["E6"]["user_message"]
+            continue
+
+
         next_q = next_question(intake)
         return {"intake": intake, "flags": flags,
                 "session_summary": build_summary(intake),
