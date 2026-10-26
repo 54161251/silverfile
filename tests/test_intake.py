@@ -178,3 +178,8 @@ def test_volunteered_ssn_gets_polite_notice_and_same_question():
     assert "don't need to share" in payload["question"]
     assert "6789" not in payload["question"]
     assert payload["fields"] == ["intake.filing_status"]
+
+def test_third_party_answer_is_flagged_and_not_saved():
+    result = handle_answer({}, "I am answering for my mother", 1)
+    assert result["intake"] == {}
+    assert result["flags"][0]["type"] == "third_party_answering"

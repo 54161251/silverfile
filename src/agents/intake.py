@@ -69,6 +69,18 @@ def looks_like_advice_request(answer: str) -> bool:
     text = answer.lower()
     return any(phrase in text for phrase in ADVICE_PHRASES)
 
+THIRD_PARTY_PHRASES = (
+    "i'm answering for", "i am answering for", "answering for my",
+    "on behalf of", "i'm his", "i'm her", "i am his", "i am her",
+    "he told me to", "she told me to", "my son is helping",
+    "my daughter is helping", "my caregiver", "power of attorney",
+)
+
+
+def looks_like_third_party(answer: str) -> bool:
+    """True if someone other than the taxpayer may be answering."""
+    text = answer.lower()
+    return any(phrase in text for phrase in THIRD_PARTY_PHRASES)
 
 QUESTIONS = [
     {
@@ -208,6 +220,10 @@ def handle_answer(state: dict, answer: str, turn_id: int) -> dict:
         flags.append(make_flag("advice_request", turn_id, answer))
         return {"intake": intake, "flags": flags}
 
+    if looks_like_third_party(answer):
+        flags.append(make_flag("third_party_answering", turn_id, answer))
+        return {"intake": intake, "flags": flags}
+    
     if contains_ssn(answer) and question["field"] != "ssn":
         flags.append(make_flag("ssn_volunteered", turn_id, ""))
         return {"intake": intake, "flags": flags}
