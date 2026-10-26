@@ -84,6 +84,22 @@ Only these forms are in scope: W-2, 1099-INT, 1099-DIV, 1099-R, SSA-1099. (Spec 
 Any other form (for example 1099-NEC, 1099-B, 1099-K, 1099-MISC, Schedule K-1) escalates
 as **E1**.
 
+## Document checks
+
+Extraction never guesses a value; these cases stop for a person instead (A19, D4):
+
+- A W-2 whose SSN is outside the 900-999 test range (Extraction flag
+  `ssn_not_test_range`) escalates as **E7**. SilverFile may hold only synthetic data
+  (R15), so the document is not used; staff close the session or supply a corrected one.
+- A document that could not be read at all (flag `unreadable_document:*`) escalates as
+  **E8**.
+- A box the return needs that was read with low confidence (listed in `unverified`) and
+  not yet confirmed escalates as **E8**. Staff choose "Enter value" and enter the box as
+  `user_inputs.<doc_id>.<box>`, which Computation uses with human-resolution provenance.
+  Interim rule: D4 has Intake confirm these with the taxpayer, but Intake does not ask
+  yet. Boxes the return does not use are not escalated.
+- An unreadable SSN on a W-2 is not escalated: the SSN is not used on the return.
+
 ## Out of scope
 
 These are not attempted. Each escalates as **E1** so a specialist can contact the client:
@@ -178,8 +194,8 @@ excerpts are not copied into the escalation record; it points at the flag ID ins
 | E4 | Request for advice | GATE | [No tax advice](#no-tax-advice) |
 | E5 | Filing-status ambiguity | STOP | [Filing status](#filing-status) |
 | E6 | Exploitation or third-party pressure | STOP | [Exploitation and third-party pressure](#exploitation-and-third-party-pressure) |
-| E7 | 1040-SR ineligible, dependent, dual-status, MFS spouse itemizes, MFS spouse boxes | STOP | [1040-SR eligibility](#1040-sr-eligibility) |
-| E8 | Honest uncertainty | GATE | [Honest uncertainty](#honest-uncertainty) |
+| E7 | 1040-SR ineligible, dependent, dual-status, MFS spouse itemizes, MFS spouse boxes; W-2 with a non-test SSN | STOP | [1040-SR eligibility](#1040-sr-eligibility), [Document checks](#document-checks) |
+| E8 | Honest uncertainty; unreadable document or unconfirmed low-confidence box | GATE | [Honest uncertainty](#honest-uncertainty), [Document checks](#document-checks) |
 
 E9 (review bound) and E10 (loop guard) are raised by the Orchestrator, not Rules.
 
