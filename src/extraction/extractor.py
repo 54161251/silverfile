@@ -38,10 +38,10 @@ def default_backend() -> OcrBackend:
 def extract_w2(path: Path, doc_id: str, *, backend: OcrBackend | None = None,
                now: datetime | None = None) -> tuple[W2Record, str]:
     """Read a W-2 image or PDF. Returns (record, sha256 of the file). Raises UnreadableDocument for bad files."""
-    backend = backend or default_backend()
     now = now or datetime.now(timezone.utc)
     pages = load_pages(path)                      # may raise UnreadableDocument (safe message)
     sha = file_sha256(path)
+    backend = backend or default_backend()        # after the file check, so a bad file is flagged even with no OCR
     entered_by = f"{AGENT_NAME}/{AGENT_VERSION} ({backend.name})"
 
     # Use the page on which most box labels were found (a PDF may start with a cover sheet).
