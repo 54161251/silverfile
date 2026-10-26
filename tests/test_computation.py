@@ -289,6 +289,35 @@ class Behaviour(unittest.TestCase):
         self.assertEqual(out["open_questions"], [])
         self.assertEqual(values(out)["8"], -300)
 
+    def _with_undetermined_1099r(self):
+        state = copy.deepcopy(SUCCESS["g01_single_ss_50pct"]["state"])
+        state["documents"].append({"doc_id": "1099r_1", "form": "1099-R",
+                                   "boxes": {"1": 10000, "2a": 10000, "7": "7", "2b_not_determined": True}})
+        return state
+
+    def test_E3_box_2b_blocks_until_a_preparer_enters_the_amount(self):
+        out = compute_return(self._with_undetermined_1099r(), now=NOW)
+        self.assertEqual(out["lines"], {})
+        self.assertTrue(any("1099r_1.boxes.2a" in q and "E3" in q for q in out["open_questions"]))
+
+    def test_E3_staff_entered_taxable_amount_is_used(self):
+        state = self._with_undetermined_1099r()
+        state["user_inputs"]["1099r_1.2a"] = {"line": "1099r_1.2a", "value": 4000, "kind": "human_resolution",
+                                              "entered_by": "staff_jlee", "timestamp": NOW}
+        out = compute_return(state, now=NOW)
+        self.assertEqual(out["open_questions"], [])
+        self.assertEqual((values(out)["5a"], values(out)["5b"]), (10000, 4000))
+        source = next(s for s in out["lines"]["5b"]["sources"] if s.get("doc_id") == "1099r_1")
+        self.assertEqual((source["confirmed_by"], source["entered_by"]), ("staff (human_resolution)", "staff_jlee"))
+
+    def test_R9_A23_direct_input_cents_are_rounded_by_a_tool(self):
+        state = copy.deepcopy(SUCCESS["g01_single_ss_50pct"]["state"])
+        state["user_inputs"]["26"] = 1200.5
+        record = compute_return(state, now=NOW)["lines"]["26"]
+        self.assertEqual(record["value"], 1201)
+        self.assertEqual(record["tool"]["name"], "sum_amounts")
+        self.assertEqual(record["kind"], "user_input")
+
     def test_R10_cli_main_runs(self):
         import contextlib
         import io
