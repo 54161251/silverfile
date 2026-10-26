@@ -202,6 +202,17 @@ def install_pii_log_masking() -> None:
         return record
 
     logging.setLogRecordFactory(factory)
+
+    # `extra={...}` fields are attached AFTER the factory runs, so scrub again once the logger has
+    # finished building the record. Scrubbing twice is harmless: masked text stays masked.
+    original_make_record = logging.Logger.makeRecord
+
+    def make_record(self, *args, **kwargs):
+        record = original_make_record(self, *args, **kwargs)
+        _scrub_record(record)
+        return record
+
+    logging.Logger.makeRecord = make_record
     _installed = True
 
 
