@@ -36,6 +36,30 @@ def parse_yes_no(answer: str) -> bool | None:
         return False
     return None
 
+def parse_refund_method(answer: str) -> str | None:
+    text = answer.strip().lower()
+    if "deposit" in text or "bank" in text:
+        return "direct_deposit"
+    if "check" in text or "mail" in text:
+        return "check"
+    return None
+
+
+def parse_account_owner(answer: str) -> str | None:
+    text = answer.strip().lower()
+    if any(p in text for p in ("not sure", "don't know", "do not know", "unknown")):
+        return "unknown"
+    if "joint" in text or "both" in text:
+        return "joint"
+    if "spouse" in text or "wife" in text or "husband" in text:
+        return "spouse"
+    if text in ("mine", "my own", "me", "my name", "taxpayer") or "my own" in text:
+        return "taxpayer"
+    words = set(re.findall(r"[a-z]+", text.replace("'s", "")))
+    if words & {"son", "daughter", "friend", "someone", "other", "caregiver", "nephew", "niece", "grandson", "granddaughter"}:
+        return "other"
+    return None
+
 import re
 
 SSN_PATTERN = re.compile(r"9\d{2}-?\d{2}-?\d{4}")

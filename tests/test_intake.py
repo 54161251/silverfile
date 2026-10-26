@@ -1,15 +1,17 @@
 from src.agents.intake import (
     QUESTIONS,
+    build_summary,
     field_path,
+    handle_answer,
     next_question,
+    parse_account_owner,
     parse_birth_date,
     parse_filing_status,
+    parse_refund_method,
+    parse_ssn,
     parse_yes_no,
     run,
     run_interactive,
-    build_summary,
-    parse_ssn,
-    handle_answer
 )
 
 
@@ -240,3 +242,12 @@ def test_rules_missing_path_is_asked_first():
               "can_be_claimed_as_dependent": False}
     q = next_question(intake, ["intake.spouse.ssn"])
     assert field_path(q) == "intake.spouse.ssn"
+
+def test_refund_method_and_owner_parsing():
+    assert parse_refund_method("direct deposit") == "direct_deposit"
+    assert parse_refund_method("mail me a check") == "check"
+    assert parse_account_owner("my own account") == "taxpayer"
+    assert parse_account_owner("not sure") == "unknown"
+    assert parse_account_owner("my son's account") == "other"
+    assert parse_account_owner("a person") is None
+    assert parse_account_owner("banana") is None
