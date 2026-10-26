@@ -119,6 +119,13 @@ def looks_like_correction(answer: str) -> bool:
 def is_married_joint(intake: dict) -> bool:
     return intake.get("filing_status") == "mfj"
 
+def refund_in_progress(intake: dict) -> bool:
+    return "refund" in intake
+
+
+def refund_is_deposit(intake: dict) -> bool:
+    return (intake.get("refund") or {}).get("method") == "direct_deposit"
+
 
 QUESTIONS = [
     {
@@ -183,6 +190,22 @@ QUESTIONS = [
         "parser": parse_yes_no,
         "only_if": is_married_joint,
     },
+        {
+        "group": "refund",
+        "field": "method",
+        "text": "If you get a refund, would you like it by direct deposit "
+                "or by a mailed check?",
+        "parser": parse_refund_method,
+        "only_if": refund_in_progress,
+    },
+    {
+        "group": "refund",
+        "field": "account_owner",
+        "text": "Whose name is on the bank account? For example: mine, "
+                "joint with my spouse, or someone else.",
+        "parser": parse_account_owner,
+        "only_if": refund_is_deposit,
+    },
 ]
 
 def field_path(question: dict) -> str:
@@ -229,6 +252,8 @@ LABELS = {
     "intake.spouse.birth_date": "your spouse's date of birth",
     "intake.spouse.ssn": "your spouse's Social Security number",
     "intake.spouse.blind": "whether your spouse is blind",
+        "intake.refund.method": "how you want your refund",
+    "intake.refund.account_owner": "whose name is on the bank account",
 }
 
 

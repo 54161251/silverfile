@@ -258,3 +258,17 @@ def test_correction_is_flagged_and_keeps_answers():
     result = handle_answer(state, "Sorry, I meant 1957", 1)
     assert result["intake"] == {"filing_status": "single"}
     assert result["flags"][0]["type"] == "contradiction"
+
+def test_refund_questions_are_conditional():
+    base = {"filing_status": "single",
+            "taxpayer": {"birth_date": "1958-03-05", "ssn": "901-55-1234",
+                         "blind": False},
+            "dual_status_alien": False,
+            "can_be_claimed_as_dependent": False}
+    assert next_question(base) is None
+    started = dict(base, refund={})
+    assert field_path(next_question(started)) == "intake.refund.method"
+    deposit = dict(base, refund={"method": "direct_deposit"})
+    assert field_path(next_question(deposit)) == "intake.refund.account_owner"
+    mailed = dict(base, refund={"method": "check"})
+    assert next_question(mailed) is None
