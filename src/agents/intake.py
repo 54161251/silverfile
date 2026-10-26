@@ -33,6 +33,14 @@ def parse_filing_status(answer: str) -> str | None:
         found.add("mfs" if words & {"separately", "separate"} else "mfj")
     return found.pop() if len(found) == 1 else None
 
+MARITAL_STAFF_WORDS = {"widow", "widowed", "widower", "divorced", "separated",
+                       "died", "passed", "deceased", "death"}
+
+
+def needs_filing_status_help(answer: str) -> bool:
+    """Widowed, divorced or separated: a colleague settles the filing status (E5), not us."""
+    return bool(set(re.findall(r"[a-z]+", answer.lower())) & MARITAL_STAFF_WORDS)
+
 def parse_birth_date(answer: str) -> str | None:
     """Turn a date like 03/05/1958, 1958-03-05 or March 5, 1958 into YYYY-MM-DD, or None."""
     text = re.sub(r"(?<=\d)(st|nd|rd|th)\b", "", answer.strip().rstrip("."),
@@ -304,27 +312,6 @@ def dependent_question(path: str) -> dict | None:
     return {"group": f"dependents.{index}", "field": field, "text": text,
             "parser": parser or (lambda answer: answer.strip() or None),
             "dependent_index": index}
-import re as _re
-
-DEPENDENT_QUESTIONS = {
-    "name": ("What is this person's first name?", None),
-    "relationship": ("How is this person related to you? For example: "
-                     "son, daughter, grandchild, parent.", None),
-    "ssn": ("What is this person's Social Security number? For this practice "
-            "system, please use only a test number that starts with 9.", parse_ssn),
-}
-
-
-def dependent_question(path: str) -> dict | None:
-    """Build a question for paths like intake.dependents.0.ssn."""
-    match = _re.fullmatch(r"intake\.dependents\.(\d+)\.(name|relationship|ssn)", path)
-    if not match:
-        return None
-    index, field = int(match.group(1)), match.group(2)
-    text, parser = DEPENDENT_QUESTIONS[field]
-    return {"group": f"dependents.{index}", "field": field, "text": text,
-            "parser": parser or (lambda answer: answer.strip() or None),
-            "dependent_index": index}
            
 def question_for_path(path: str) -> dict | None:
     """Find the question whose full field path equals `path`."""
@@ -461,6 +448,10 @@ def handle_answer(state: dict, answer: str, turn_id: int, question: dict | None 
         flags.append(make_flag("ssn_volunteered", turn_id, ""))
         return {"intake": intake, "flags": flags}
 
+    if question["field"] == "filing_status" and needs_filing_status_help(answer):
+        intake = record_answer(intake, "marital_status_unclear", True)
+        return {"intake": intake, "flags": flags}
+
     value = question["parser"](answer)
     if value is None:
         flags.append(make_flag("uncertain_answer", turn_id, answer))
@@ -549,6 +540,10 @@ def run_interactive(state: dict) -> dict:
         if "out_of_scope_mention" in new:
             notice = ESCALATION_CATALOG["E1"]["user_message"]
             continue
+        if intake.get("marital_status_unclear") and not intake.get("filing_status"):
+            # Hand over now (no open questions) so Rules raises E5 for a colleague.
+            return {"intake": intake, "flags": flags, "open_questions": [],
+                    "session_summary": ESCALATION_CATALOG["E5"]["user_message"]}
 
         next_q = next_question(intake, missing)
         return {"intake": intake, "flags": flags,

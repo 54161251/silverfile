@@ -398,3 +398,12 @@ def test_new_escalation_ids_continue_after_existing():
     state = make(flags=[flag("flag_10", "advice_request")],
                  escalations=[{"id": "esc_0007", "code": "E9", "reason": "x", "evidence": []}])
     assert rules.run(state)["escalations"][0]["id"] == "esc_0008"
+
+
+def test_E5_marital_status_unclear_without_any_filing_status():
+    # Intake records this instead of a status for "widowed", "divorced", "separated".
+    state = make(marital_status_unclear=True)
+    state["intake"].pop("filing_status")
+    out = rules.run(state)
+    assert codes(out) == ["E5"]
+    assert out["filing_status_validated"] is None

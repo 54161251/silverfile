@@ -60,9 +60,21 @@ def test_earlier_answers_are_kept():
 
 
 def test_unclear_answer_raises_uncertain_flag():
-    result = run({"latest_answer": "widowed"})
+    result = run({"latest_answer": "it's complicated"})
     assert result["intake"] == {}
     assert result["flags"][0]["type"] == "uncertain_answer"
+
+
+def test_E5_widowed_or_divorced_goes_to_a_colleague_not_a_guess():
+    for answer in ("widowed", "My husband passed away in August", "divorced"):
+        result = run({"latest_answer": answer})
+        assert result["intake"] == {"marital_status_unclear": True}, answer
+        assert result["flags"] == []
+
+
+def test_married_filing_separately_is_not_mistaken_for_separated():
+    result = run({"latest_answer": "married filing separately"})
+    assert result["intake"] == {"filing_status": "mfs"}
 
 def test_dual_status_question_is_asked_last_and_saved():
     intake = {"filing_status": "single",
