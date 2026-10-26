@@ -106,6 +106,16 @@ def looks_like_third_party(answer: str) -> bool:
     text = answer.lower()
     return any(phrase in text for phrase in THIRD_PARTY_PHRASES)
 
+CORRECTION_PHRASES = (
+    "i made a mistake", "i was wrong", "sorry, i meant", "i meant to say",
+    "go back", "previous question", "change my answer", "that was wrong",
+)
+
+
+def looks_like_correction(answer: str) -> bool:
+    text = answer.lower()
+    return any(phrase in text for phrase in CORRECTION_PHRASES)
+
 def is_married_joint(intake: dict) -> bool:
     return intake.get("filing_status") == "mfj"
 
