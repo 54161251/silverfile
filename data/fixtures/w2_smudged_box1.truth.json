@@ -1,0 +1,14 @@
+{
+  "name": "w2_smudged_box1",
+  "style": "smudge",
+  "ssn": "904-56-7890",
+  "boxes": {
+    "1": "87654.32",
+    "2": "9100.00",
+    "3": "87654.32",
+    "4": "5434.57",
+    "5": "87654.32",
+    "6": "1271.00"
+  },
+  "note": "Synthetic data. Boxes are dollars and cents as printed; null means the box is blank."
+}

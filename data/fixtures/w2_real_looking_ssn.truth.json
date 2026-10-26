@@ -1,0 +1,14 @@
+{
+  "name": "w2_real_looking_ssn",
+  "style": "clean",
+  "ssn": "123-45-6789",
+  "boxes": {
+    "1": "31250.00",
+    "2": "3400.00",
+    "3": "31250.00",
+    "4": "1937.50",
+    "5": "31250.00",
+    "6": "453.13"
+  },
+  "note": "Synthetic data. Boxes are dollars and cents as printed; null means the box is blank."
+}

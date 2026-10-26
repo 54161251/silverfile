@@ -1,0 +1,14 @@
+{
+  "name": "w2_batch_08",
+  "style": "clean",
+  "ssn": "907-86-2815",
+  "boxes": {
+    "1": "94518.96",
+    "2": "5671.14",
+    "3": "94518.96",
+    "4": "5860.18",
+    "5": "94518.96",
+    "6": "1370.52"
+  },
+  "note": "Synthetic data. Boxes are dollars and cents as printed; null means the box is blank."
+}
