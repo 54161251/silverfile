@@ -2,25 +2,35 @@
 
 A shared workspace for the team's seven-person SilverFile project: six agents plus a dashboard/demo workstream.
 
-**Status checked October 25, 2026: orchestration, basic interactive Intake, Rules, Computation, Review, the staff dashboard, form rendering, CI and Docker configuration are present. Intake's remaining tax questions and production Extraction are still pending; a complete taxpayer-to-draft workflow is not yet demonstrated.**
+**Status checked October 26, 2026, with the October 26 pull requests merged: all six agents run together in the production graph. Both eval cases go from a W-2 image to a draft 1040-SR (`draft_ready`) through real OCR, Intake, Rules, Computation and Review; eval case 2 stops for staff (E6) and resumes. Still open: actual API token counts for spec 4.5, the human spreadsheet check of the golden returns, the report and the demo video.**
+
+## Team roles and focus areas
+
+| Focus area | Team member assigned | Workstream |
+|---|---|---|
+| Agent memory | Zimo (P3) | Intake agent, session summaries, context strategy |
+| Inter-agent communication | Jad (P2) | Computation agent, MCP tax tools, report |
+| Task division and management | Kaiwen (P1) | Shared contracts, graph, routing, persistence, loop guards |
+| MLOps/DevOps | Ziling (P6) | Review agent, CI, Docker |
+| Guardrails and ethics | Lluc (P5) | Eligibility & Rules agent, policy corpus, escalations E1–E8 |
+| Security | Christina (P4) | W-2 extraction, SSN rule, PII masking, fixtures |
+| To confirm with the instructor (seven-person team) | David (P7) | Staff dashboard, taxpayer page, form output, demo video |
 
 ## Current implementation
 
 | Owner | Component | Current state | Details |
 |---|---|---|---|
-| P1 — Kaiwen | Contracts, orchestration, checkpoints, interrupts, guards | Implemented; document correction/versioning needs integration | [P1 handoff](docs/IMPLEMENTATION_NOTES.md) |
-| P2 — Jad | Computation and deterministic MCP tools | Implemented; golden returns need human verification | [Computation](docs/P2_COMPUTATION.md) |
-| P3 — Zimo | Conversational Intake, memory and context metrics | Five-question interactive Intake connected; remaining questions, taxpayer page and metrics pending | [Intake integration](docs/P1_INTAKE_HANDOFF.md) |
-| P4 — Christina | W-2 image extraction, security and fixtures | Production adapter and assignment demo fixtures pending | [Tasks](TASKS.md) |
+| P1 — Kaiwen | Contracts, orchestration, checkpoints, interrupts, guards | Implemented | [P1 handoff](docs/IMPLEMENTATION_NOTES.md) |
+| P2 — Jad | Computation and deterministic MCP tools | Implemented; golden returns need a human spreadsheet check | [Computation](docs/P2_COMPUTATION.md) |
+| P3 — Zimo | Conversational Intake, memory and context strategy | Implemented; actual token counts pending (`docs/metrics.md`) | [Intake integration](docs/P1_INTAKE_HANDOFF.md) |
+| P4 — Christina | W-2 image extraction, security and fixtures | Implemented | [Extraction](docs/P4_EXTRACTION_SECURITY.md) |
 | P5 — Lluc | Eligibility, Rules and escalations | Implemented | [Rules interface](docs/p5_rules_interface.md) |
-| P6 — Ziling | Review, CI and Docker | Implemented; full grader simulation pending | [Review](docs/P6_REVIEW.md) |
-| P7 — David | Staff dashboard, human resolution, HTML/PDF output | Implemented; final demo video pending | [Dashboard](docs/P7_DASHBOARD.md) |
+| P6 — Ziling | Review, CI and Docker | Implemented; both eval cases run in Docker | [Review](docs/P6_REVIEW.md) |
+| P7 — David | Staff dashboard, taxpayer page, HTML/PDF output | Implemented; demo video pending | [Dashboard](docs/P7_DASHBOARD.md) |
 
-“Implemented” describes a component, not acceptance of the complete application. The
-offline graph uses real interactive Intake and Rules, with placeholder Extraction,
-Computation and Review adapters; it does not calculate a tax return. The dashboard's
-**Sample returns** tab separately invokes real Computation on golden data. These are
-different demonstrations.
+`python run.py ... --demo` is a separate routing demonstration with placeholder
+Extraction, Computation and Review; it never calculates a return. Without `--demo`, the
+production agents run.
 
 ## Start here
 
@@ -61,17 +71,19 @@ The P1 routing topology is implemented; the offline demo still uses placeholder 
 
 | Location | Purpose |
 |---|---|
-| `src/agents/` | Basic interactive Intake, Rules, Computation and Review; Extraction pending |
+| `src/agents/` | Intake, Extraction, Rules, Computation and Review (`run(state) -> dict` each) |
+| `src/prompts/` | Model prompts (R7) |
 | `src/graph.py`, `src/memory.py`, `src/state.py` | Routing, SQLite sessions and shared contracts |
 | `src/demo_agents.py` | Explicit offline placeholders, separate from production adapters |
 | `streamlit_app.py`, `src/dashboard/` | Staff UI, resolution, provenance and form rendering |
 | `src/tools/` | Deterministic MCP calculation tools |
 | `tests/golden/` | Synthetic computation cases; human cross-check still required |
-| `data/fixtures/`, `evals/` | Reserved for assignment fixtures and evaluation scenarios |
+| `data/policy.md` | Policy corpus the Rules agent cites |
+| `data/fixtures/`, `evals/` | Synthetic W-2 images (incl. the 10-document batch) and evaluation scenarios |
 | `tests/` | Routing, reducer, calculation, and loop-guard tests |
 | `traces/` | Sanitized execution evidence |
 | `docs/` | Architecture, metrics, implementation notes, AI disclosure |
-| `demo/` | Current walkthroughs; final assignment cases and video pending |
+| `demo/` | Eval cases 1 and 2 with their W-2 images and instructions; video pending |
 | `.github/workflows/ci.yml` | Python 3.11 tests and selected golden-return reviews |
 | `Dockerfile`, `docker-compose.yml` | Container setup and dashboard service |
 
@@ -98,17 +110,30 @@ tesseract-ocr` (Ubuntu), or the UB Mannheim installer (Windows). Without it the 
 tests are skipped and an image upload stops with an "OCR is not installed" error. The
 Docker image and CI already include it.
 
-The demo uses synthetic structured documents, real Intake and Rules, and placeholder
-Extraction/Computation/Review adapters. It ends as **scaffold_complete**, not a
-completed tax return. No API key is needed. See [persistent human-review walkthrough](demo/P1_WALKTHROUGH.md)
-and [integration handoff](docs/IMPLEMENTATION_NOTES.md).
+The `--demo` run uses placeholder Extraction/Computation/Review and ends as
+**scaffold_complete**, not a tax return. See [persistent human-review walkthrough](demo/P1_WALKTHROUGH.md).
 
-For the eventual production agents, each module exposes `run(state) -> dict` under
-`src/agents/`. `python run.py start --input path/to/synthetic-input.json` deliberately
-fails until the missing adapters are supplied. Runtime SQLite files live under ignored
-`runtime/`; use the same `--db` and `--thread-id` for resume. `SILVERFILE_DB` optionally
-sets the database path. P1 uses no API credentials; model configuration belongs to the
-agent owners.
+**The real system (eval cases).** No API key is needed:
+
+```sh
+python run.py start --input demo/eval_case_1_input.json --thread-id eval-case-1   # draft_ready
+python run.py start --input demo/eval_case_2_input.json --thread-id eval-case-2   # awaiting_human (E6)
+python run.py resume --thread-id eval-case-2 --input demo/eval_case_2_resolution.json
+```
+
+Full instructions and expected values: [eval case 1](demo/eval_case_1.md), [eval case 2](demo/eval_case_2.md).
+Runtime SQLite files live under ignored `runtime/`; use the same `--db` and `--thread-id`
+for resume. `SILVERFILE_DB` optionally sets the database path.
+
+**Context-window batch (spec 4.5).** Needs `ANTHROPIC_API_KEY` and `SILVERFILE_MODEL` in
+`.env` (`--estimate` runs offline with estimated counts):
+
+```sh
+python run.py batch --no-context-strategy
+python run.py batch
+```
+
+Both rebuild [docs/metrics.md](docs/metrics.md).
 
 ### Staff dashboard
 
@@ -126,8 +151,10 @@ an escalation; without them, the dashboard is read-only. The CLI and dashboard m
 the same database. Set `SILVERFILE_DB` in the shell for CLI commands if changing the
 default; the Streamlit entry point also loads `.env`.
 
-Use **Sample returns** for computed HTML/PDF previews. Demo sessions remain routing
-examples and show no computed form lines. See [dashboard walkthrough](demo/P7_DASHBOARD_WALKTHROUGH.md).
+Sessions started without `--demo` (for example the eval cases) show the computed draft
+form with hover and click provenance. Demo sessions are routing examples and show no form
+lines; **Sample returns** shows the golden returns. The **Taxpayer** page
+accepts W-2 uploads when a return is started. See [dashboard walkthrough](demo/P7_DASHBOARD_WALKTHROUGH.md).
 
 ### Docker
 
@@ -156,13 +183,12 @@ for actual outcomes. Cases g02–g04 still need 1099-R distribution-code fixture
 
 ## Integration and submission work still open
 
-- Complete Intake's required tax questions and connect Extraction, the taxpayer page, Computation and Review in one workflow.
-- Define corrected-document replacement/versioning so corrections cannot double-count income.
-- Connect staff-entered 1099-R taxable amounts to Computation (E3); the dashboard alone is insufficient.
-- Move remaining income summation and direct-input rounding out of Computation into MCP tools.
-- Align the extraction confidence threshold across workstreams and repair incomplete golden fixtures.
-- Human-check golden returns; run clean and resolved-HITL cases through the real graph.
-- Complete context-token measurements, required W-2 images, traces, report, AI disclosure and video.
+- Run the spec 4.5 batch with the team key so `docs/metrics.md` shows actual API counts.
+- Human-check the golden returns in a spreadsheet (R12).
+- An unreadable document can only be recovered by staff entering its boxes one escalation
+  at a time; documents cannot be added to a running session.
+- Traces, report and demo video; P3 and P4 AI-log entries (see `docs/AI_DISCLOSURE.md`).
+- Repair golden fixtures g02–g04 (1099-R box 7) so CI can review them too.
 
 These are integration tasks, not claims that all current component tests fail. See
 [TASKS.md](TASKS.md) and the linked owner notes for details and evidence.
