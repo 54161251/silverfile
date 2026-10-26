@@ -7,3 +7,8 @@ pytest==9.1.1
 mcp==2.3.0
 streamlit==1.65.0  # P7: staff dashboard and taxpayer page (D8)
 pypdf==6.20.0  # P7: fill the official 1040-SR PDF (D7 stretch)
+# P4 W-2 extraction (OCR). Also needs the tesseract-ocr system package: Dockerfile, CI, README.
+pillow==12.3.0
+pytesseract==0.3.13
+pypdfium2==5.13.0
+numpy==2.4.4  # 2.5 needs Python 3.12; team target is 3.11
