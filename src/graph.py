@@ -32,8 +32,11 @@ def build_graph(checkpointer, agents):
 
     def fan_out(state):
         # Each worker gets a single document; the documents reducer joins all writes.
+        # Only uploads not yet extracted: a second read differs (its extraction timestamp)
+        # and the reducer rejects conflicting same-ID records. Corrections use a new ID.
+        done = {doc["doc_id"] for doc in state.get("documents", [])}
         return [Send("extraction", {"work_state": state, "upload": upload})
-                for upload in state.get("uploads", [])] or "aggregate"
+                for upload in state.get("uploads", []) if upload["doc_id"] not in done] or "aggregate"
 
     def extract(task):
         snapshot = deepcopy(task["work_state"])

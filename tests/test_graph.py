@@ -52,6 +52,27 @@ def test_review_sendback_recomputes_then_reaudits(tmp_path):
         assert calls == ["compute", "review", "compute", "review"]
 
 
+def test_review_sendback_to_extraction_does_not_reread_documents(tmp_path):
+    # Real extraction stamps the time into flags, so a second read of the same ID conflicts.
+    agents = adapters()
+    reads, verdicts = [], iter(["revise", "pass"])
+    original = agents["extraction"]
+    def extract(state):
+        reads.append(state["uploads"][0]["doc_id"])
+        update = original(state)
+        update["documents"][0]["flags"] = [f"extracted_at=read {len(reads)}"]
+        return update
+    def review(state):
+        verdict = next(verdicts)
+        findings = [{"target_agent": "extraction", "reason": "seeded"}] if verdict == "revise" else []
+        return {"review_verdict": verdict, "review_findings": findings}
+    agents.update(extraction=extract, review=review)
+    with open_sessions(tmp_path / "state.db", agents) as sessions:
+        result = sessions.start("reread", sample(), mode="demo")
+    assert result["status"] == "scaffold_complete"
+    assert sorted(reads) == ["w2_1", "w2_2"]
+
+
 def test_missing_input_pauses_and_resumes_intake(tmp_path):
     inputs = sample()
     del inputs["intake"]["taxpayer"]["birth_date"]
