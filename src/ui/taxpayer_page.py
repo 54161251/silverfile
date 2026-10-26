@@ -18,6 +18,7 @@ from copy import deepcopy
 
 import streamlit as st
 
+from src.agents import intake as intake_agent
 from src.agents.intake import QUESTIONS, field_path
 from src.dashboard.app import db_path
 from src.dashboard.resolution import taxpayer_message
@@ -41,12 +42,26 @@ STYLE = """<style>
 DONE_TEXT = ("Thank you. You’ve answered everything we need for now. A Kushim preparer will check "
              "your draft return and contact you. SilverFile never files a return for you.")
 CLOSED_TEXT = "Thank you. One of our specialists will contact you to finish your return."
-PLAIN_LABELS = {"intake.filing_status": "Your situation", "intake.taxpayer.birth_date": "Date of birth",
-                "intake.taxpayer.blind": "Blind", "intake.dual_status_alien": "Nonresident for part of 2025",
-                "intake.can_be_claimed_as_dependent": "Someone can list you as a dependent"}
 PLAIN_VALUES = {"single": "Single", "mfj": "Married, filing together", "mfs": "Married, filing separately",
                 "hoh": "Head of household", "qss": "Widowed (qualifying surviving spouse)",
+                "direct_deposit": "Direct deposit", "check": "Mailed check", "taxpayer": "Your own",
+                "joint": "Joint", "spouse": "Your spouse's", "other": "Someone else's", "unknown": "Not sure",
                 True: "Yes", False: "No"}
+
+
+def plain_label(question: dict) -> str:
+    """Intake's own wording for a question (intake.LABELS), else the field name."""
+    label = getattr(intake_agent, "LABELS", {}).get(field_path(question))
+    label = label or question["field"].replace("_", " ")
+    return label[:1].upper() + label[1:]
+
+
+def plain_value(path: str, value) -> str:
+    if path.endswith(".ssn"):
+        return f"XXX-XX-{str(value)[-4:]}"  # R17: never show a full SSN back
+    if isinstance(value, (bool, str)) and value in PLAIN_VALUES:
+        return PLAIN_VALUES[value]
+    return str(value)
 
 
 def new_code() -> str:
@@ -99,8 +114,7 @@ def covered(intake: dict) -> list[tuple[str, str]]:
         path = field_path(question)
         value = _value(intake, path)
         if value not in (None, ""):
-            label = PLAIN_LABELS.get(path, question["field"].replace("_", " ").capitalize())
-            rows.append((label, PLAIN_VALUES.get(value, str(value))))
+            rows.append((plain_label(question), plain_value(path, value)))
     return rows
 
 
@@ -165,6 +179,8 @@ def conversation(thread_id: str) -> None:
 
     if pause and pause.get("type") == "intake":
         question = pause.get("question") or "Please answer the next question."
+        if pause.get("summary"):
+            st.caption(pause["summary"])
         st.html(f'<div class="sf-question" role="status" aria-live="polite">{html.escape(question)}</div>')
         with st.form("answer", clear_on_submit=True, border=False):
             text = st.text_area("Your answer", height=110, key="sf_answer")
