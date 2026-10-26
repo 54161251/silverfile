@@ -82,6 +82,10 @@ def looks_like_third_party(answer: str) -> bool:
     text = answer.lower()
     return any(phrase in text for phrase in THIRD_PARTY_PHRASES)
 
+def is_married_joint(intake: dict) -> bool:
+    return intake.get("filing_status") == "mfj"
+
+
 QUESTIONS = [
     {
         "group": None,
@@ -98,31 +102,37 @@ QUESTIONS = [
     },
     {
         "group": "taxpayer",
+        "field": "ssn",
+        "text": "What is your Social Security number? For this practice system, "
+                "please use only a test number that starts with 9.",
+        "parser": parse_ssn,
+    },
+    {
+        "group": "taxpayer",
         "field": "blind",
         "text": "Are you blind? Please answer yes or no.",
         "parser": parse_yes_no,
-
     },
-        {
+    {
         "group": None,
         "field": "dual_status_alien",
         "text": "Were you a nonresident of the United States for part of 2025? "
                 "Please answer yes or no.",
         "parser": parse_yes_no,
     },
-        {
+    {
         "group": None,
         "field": "can_be_claimed_as_dependent",
         "text": "Can someone else list you as a dependent on their tax return? "
                 "Please answer yes or no.",
         "parser": parse_yes_no,
     },
-        {
-        "group": "taxpayer",
-        "field": "ssn",
-        "text": "What is your Social Security number? For this practice system, "
-                "please use only a test number that starts with 9.",
-        "parser": parse_ssn,
+    {
+        "group": "spouse",
+        "field": "birth_date",
+        "text": "What is your spouse's date of birth? For example: March 5, 1958.",
+        "parser": parse_birth_date,
+        "only_if": is_married_joint,
     },
 ]
 
@@ -138,8 +148,11 @@ def _is_filled(intake: dict, question: dict) -> bool:
 
 
 def next_question(intake: dict) -> dict | None:
-    """Return the first question that has no answer yet, or None if done."""
+    """Return the first applicable question that has no answer yet, or None."""
     for question in QUESTIONS:
+        condition = question.get("only_if")
+        if condition and not condition(intake):
+            continue
         if not _is_filled(intake, question):
             return question
     return None
@@ -151,6 +164,7 @@ LABELS = {
     "intake.taxpayer.blind": "whether you are blind",
     "intake.dual_status_alien": "whether you were a nonresident for part of 2025",
     "intake.can_be_claimed_as_dependent": "whether someone else can claim you as a dependent",
+    "intake.spouse.birth_date": "your spouse's date of birth",
 }
 
 
@@ -158,6 +172,9 @@ def build_summary(intake: dict) -> str:
     """Plain-language recap of what is already answered and what is left."""
     done, left = [], []
     for question in QUESTIONS:
+        condition = question.get("only_if")
+        if condition and not condition(intake):
+            continue
         label = LABELS[field_path(question)]
         (done if _is_filled(intake, question) else left).append(label)
     if not done:
