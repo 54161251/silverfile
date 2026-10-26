@@ -4,6 +4,7 @@ from src.agents.intake import (
     field_path,
     handle_answer,
     next_question,
+    out_of_scope_items,
     parse_account_owner,
     parse_birth_date,
     parse_filing_status,
@@ -12,7 +13,6 @@ from src.agents.intake import (
     parse_yes_no,
     run,
     run_interactive,
-    looks_like_correction
 )
 
 
@@ -287,3 +287,14 @@ def test_session_resumes_after_closing_sqlite(tmp_path):
     payload = second["__interrupt__"][0].value
     assert payload["fields"] == ["intake.taxpayer.birth_date"]
     assert payload["question"].startswith("So far we have covered")
+
+def test_out_of_scope_items_are_detected():
+    assert out_of_scope_items("I also rent out a house") == ["rental"]
+    assert out_of_scope_items("I sold some bitcoin") == ["digital_assets"]
+    assert out_of_scope_items("single") == []
+
+
+def test_out_of_scope_mention_is_flagged_and_not_saved():
+    result = handle_answer({}, "I have rental income too", 1)
+    assert result["intake"] == {}
+    assert result["flags"][0]["type"] == "out_of_scope_mention"

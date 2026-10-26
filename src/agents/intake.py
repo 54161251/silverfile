@@ -116,6 +116,24 @@ def looks_like_correction(answer: str) -> bool:
     text = answer.lower()
     return any(phrase in text for phrase in CORRECTION_PHRASES)
 
+OUT_OF_SCOPE_KEYWORDS = {
+    "itemize": ("itemize", "itemized", "schedule a"),
+    "self_employment": ("self-employed", "self employed", "my business", "freelance", "1099-nec"),
+    "rental": ("rental", "rent out", "landlord", "tenant"),
+    "capital_gains": ("capital gain", "sold stock", "sold shares", "sold my house", "sold a house"),
+    "digital_assets": ("bitcoin", "crypto", "ethereum", "nft"),
+    "foreign": ("foreign account", "overseas", "abroad", "foreign income"),
+    "amended_or_prior_year": ("amended", "prior year", "last year's return", "previous year"),
+    "state_return": ("state return", "state tax"),
+}
+
+
+def out_of_scope_items(answer: str) -> list:
+    """Category codes (matching Rules' OUT_OF_SCOPE_ITEMS) mentioned in the answer."""
+    text = answer.lower()
+    return [code for code, words in OUT_OF_SCOPE_KEYWORDS.items()
+            if any(w in text for w in words)]
+
 def is_married_joint(intake: dict) -> bool:
     return intake.get("filing_status") == "mfj"
 
@@ -335,6 +353,10 @@ def handle_answer(state: dict, answer: str, turn_id: int) -> dict:
         flags.append(make_flag("contradiction", turn_id, answer))
         return {"intake": intake, "flags": flags}
 
+    if out_of_scope_items(answer):
+        flags.append(make_flag("out_of_scope_mention", turn_id, answer))
+        return {"intake": intake, "flags": flags}
+
     if contains_ssn(answer) and question["field"] != "ssn":
         flags.append(make_flag("ssn_volunteered", turn_id, ""))
         return {"intake": intake, "flags": flags}
@@ -411,6 +433,10 @@ def run_interactive(state: dict) -> dict:
             notice = ("No problem. Your earlier answers are safe. "
                       "Let's finish this question first, and a colleague "
                       "can fix anything that needs changing.")
+            continue
+
+        if any(f["type"] == "out_of_scope_mention" for f in flags[before:]):
+            notice = ESCALATION_CATALOG["E1"]["user_message"]
             continue
 
 
