@@ -105,12 +105,12 @@ def looks_like_third_party(answer: str) -> bool:
     """True if someone other than the taxpayer may be answering."""
     text = answer.lower()
     return any(phrase in text for phrase in THIRD_PARTY_PHRASES)
+ 
 
 CORRECTION_PHRASES = (
     "i made a mistake", "i was wrong", "sorry, i meant", "i meant to say",
     "go back", "previous question", "change my answer", "that was wrong",
 )
-
 
 def looks_like_correction(answer: str) -> bool:
     text = answer.lower()
@@ -288,12 +288,13 @@ def handle_filing_status_answer(state: dict, answer: str, turn_id: int) -> dict:
         intake = record_answer(intake, "filing_status", value)
 
     return {"intake": intake, "flags": flags}
+
 def handle_answer(state: dict, answer: str, turn_id: int) -> dict:
     """Process one answer for whichever question is currently open."""
     intake = state.get("intake") or {}
     flags = list(state.get("flags") or [])
 
-    question = next_question(intake, (state.get("eligibility") or {}).get("missing"))
+    question = next_question(intake)
     if question is None:
         return {"intake": intake, "flags": flags}
 
@@ -304,11 +305,15 @@ def handle_answer(state: dict, answer: str, turn_id: int) -> dict:
     if looks_like_third_party(answer):
         flags.append(make_flag("third_party_answering", turn_id, answer))
         return {"intake": intake, "flags": flags}
-    
+
+    if looks_like_correction(answer):
+        flags.append(make_flag("contradiction", turn_id, answer))
+        return {"intake": intake, "flags": flags}
+
     if contains_ssn(answer) and question["field"] != "ssn":
         flags.append(make_flag("ssn_volunteered", turn_id, ""))
         return {"intake": intake, "flags": flags}
-    
+
     value = question["parser"](answer)
     if value is None:
         flags.append(make_flag("uncertain_answer", turn_id, answer))
@@ -375,6 +380,12 @@ def run_interactive(state: dict) -> dict:
         
         if any(f["type"] == "third_party_answering" for f in flags[before:]):
             notice = ESCALATION_CATALOG["E6"]["user_message"]
+            continue
+
+        if any(f["type"] == "contradiction" for f in flags[before:]):
+            notice = ("No problem. Your earlier answers are safe. "
+                      "Let's finish this question first, and a colleague "
+                      "can fix anything that needs changing.")
             continue
 
 

@@ -12,6 +12,7 @@ from src.agents.intake import (
     parse_yes_no,
     run,
     run_interactive,
+    looks_like_correction
 )
 
 
@@ -251,3 +252,9 @@ def test_refund_method_and_owner_parsing():
     assert parse_account_owner("my son's account") == "other"
     assert parse_account_owner("a person") is None
     assert parse_account_owner("banana") is None
+
+def test_correction_is_flagged_and_keeps_answers():
+    state = {"intake": {"filing_status": "single"}}
+    result = handle_answer(state, "Sorry, I meant 1957", 1)
+    assert result["intake"] == {"filing_status": "single"}
+    assert result["flags"][0]["type"] == "contradiction"
