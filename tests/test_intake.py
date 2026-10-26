@@ -157,3 +157,24 @@ def test_volunteered_ssn_is_not_saved_and_flag_has_no_number():
     flag = result["flags"][0]
     assert flag["type"] == "ssn_volunteered"
     assert "6789" not in flag["excerpt"]
+
+def test_volunteered_ssn_gets_polite_notice_and_same_question():
+    from langgraph.checkpoint.memory import MemorySaver
+    from langgraph.graph import END, START, StateGraph
+    from langgraph.types import Command
+
+    builder = StateGraph(dict)
+    builder.add_node("intake", run_interactive)
+    builder.add_edge(START, "intake")
+    builder.add_edge("intake", END)
+    graph = builder.compile(checkpointer=MemorySaver())
+    config = {"configurable": {"thread_id": "t4"}}
+
+    graph.invoke({}, config)
+    second = graph.invoke(
+        Command(resume={"answer": "my ssn is 123-45-6789"}), config
+    )
+    payload = second["__interrupt__"][0].value
+    assert "don't need to share" in payload["question"]
+    assert "6789" not in payload["question"]
+    assert payload["fields"] == ["intake.filing_status"]
