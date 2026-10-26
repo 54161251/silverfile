@@ -11,7 +11,10 @@ pytest.importorskip("streamlit")
 from streamlit.testing.v1 import AppTest  # noqa: E402
 
 APP = str(Path(__file__).resolve().parents[1] / "streamlit_app.py")
-ANSWERS = ["Single", "March 5, 1958", "no", "no", "no"]
+# Answers by the field Intake asks for, so new or reordered questions don't break the flow test.
+ANSWERS = {"filing_status": "Single", "birth_date": "March 5, 1958", "ssn": "901-55-1234",
+           "method": "Mailed check", "account_owner": "mine"}
+DEFAULT_ANSWER = "no"  # every remaining question is yes/no
 
 
 def test_A19_ssn_question_accepts_only_900_series():
@@ -40,7 +43,14 @@ def test_starter_inputs_leave_every_intake_question_unanswered():
     intake = starter_inputs()["intake"]
     assert covered(intake) == []
     assert all(field_path(q).startswith("intake.") for q in QUESTIONS)
-    assert intake["taxpayer"]["ssn"].startswith("9")  # not yet asked by Intake; synthetic
+    asked = {field_path(q) for q in QUESTIONS}
+    if "intake.taxpayer.ssn" in asked:  # Intake asks for the SSN itself, so nothing is pre-filled
+        assert "ssn" not in intake.get("taxpayer", {})
+
+
+def test_R17_covered_summary_masks_ssn():
+    rows = dict(covered({"taxpayer": {"ssn": "901-55-1234", "birth_date": "1958-03-05"}}))
+    assert "901-55-1234" not in " ".join(rows.values())
 
 
 def test_codes_are_forgiving_to_type():
@@ -60,6 +70,12 @@ def run(app):
     return app
 
 
+def pending_field(env, code):
+    from src.dashboard.store import Store
+    summary, _ = Store(env).state(code)
+    return summary.intake_fields[0].rsplit(".", 1)[-1] if summary.intake_fields else None
+
+
 def answer(app, text):
     app.text_area(key="sf_answer").input(text)
     next(b for b in app.button if b.label == "Send answer").click()
@@ -71,9 +87,12 @@ def test_B2_one_question_at_a_time_to_a_finished_draft(env):
     next(b for b in app.button if b.label == "Start a new return").click()
     run(app)
     code = app.session_state["sf_thread"]
-    for text in ANSWERS:
+    for _ in range(25):
+        field = pending_field(env, code)
+        if field is None:
+            break
         assert len(app.text_area) == 1  # exactly one open question
-        answer(app, text)
+        answer(app, ANSWERS.get(field, DEFAULT_ANSWER))
     assert any("never files" in s.value for s in app.success)
     from src.dashboard.store import Store
     summary, state = Store(env).state(code)
@@ -114,4 +133,4 @@ def test_resume_by_code_shows_what_was_covered(env):
     run(later)
     summary = " ".join(e.body for e in later.expander[0].markdown)
     assert "Single" in summary and "1958-03-05" in summary
-    assert len(later.text_area) == 1  # picks up at the blindness question
+    assert len(later.text_area) == 1  # picks up at the next unanswered question
