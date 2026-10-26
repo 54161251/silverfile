@@ -1,0 +1,163 @@
+{
+  "schema_version": 1,
+  "about": "The two evaluation cases required by Assignment 7 section 5.2. Case 1 is a clean minimal run where everything works. Case 2 triggers a human-in-the-loop (HITL) event that staff then resolve. All people, employers, numbers and documents are FAKE (synthetic). Every SSN is in the 900-series test range.",
+  "how_to_check_automatically": "python -m pytest tests/test_fixtures_and_evals.py -q   (runs both cases through the real Extraction, Rules, Computation and Review agents; the LangGraph run itself is covered by the CLI steps below)",
+  "regenerate_documents": "python data/generate_fixtures.py",
+  "cases": [
+    {
+      "id": "eval_case_1",
+      "title": "Clean minimal run",
+      "type": "clean",
+      "assignment_reference": "Section 6 D.1 (clean run, filled-in 1040-SR) and D.3 (W-2 amounts read from an image)",
+      "write_up": "demo/eval_case_1.md",
+      "input_file": "demo/eval_case_1_input.json",
+      "w2_image": "demo/w2_image_1.jpg",
+      "w2_ground_truth": "data/fixtures/w2_clean_1.truth.json",
+      "taxpayer": {
+        "filing_status": "single",
+        "birth_date": "1955-06-01",
+        "ssn": "901-23-4567 (test number)",
+        "blind": false,
+        "dependents": [],
+        "other_income_documents": "none",
+        "refund_account_owner": "taxpayer"
+      },
+      "run": {
+        "cli": [
+          "python run.py start --input demo/eval_case_1_input.json --thread-id eval-case-1",
+          "python run.py status --thread-id eval-case-1"
+        ],
+        "dashboard": [
+          "python -m streamlit run streamlit_app.py",
+          "Open http://localhost:8501 and look for session eval-case-1 under All returns, status Draft ready."
+        ]
+      },
+      "expected": {
+        "w2_extraction": {
+          "boxes": {"1": 31250, "2": 3400, "3": 31250, "4": 1937.5, "5": 31250, "6": 453.13, "a": "***-**-4567"},
+          "unverified": [],
+          "min_confidence": 0.8
+        },
+        "escalations": [],
+        "final_status": "draft_ready",
+        "review_verdict": "pass",
+        "form_1040sr_created": true,
+        "lines": {
+          "1a": 31250, "1z": 31250, "9": 31250, "11a": 31250, "12d": 1, "12e": 17750, "13b": 6000,
+          "14": 23750, "15": 7500, "16": 750, "18": 750, "22": 750, "24": 750,
+          "25a": 3400, "25d": 3400, "33": 3400, "34": 2650
+        },
+        "line_37_amount_owed": "not present (the return is a refund)"
+      },
+      "hand_derivation": [
+        "Line 1a/1z/9/11a = W-2 box 1 = 31,250 (no other income, no adjustments)",
+        "Line 12d = 1 box (age 65 or older; born 1 June 1955, before 2 January 1961, so 1040-SR eligible)",
+        "Line 12e = 15,750 (single) + 2,000 (one 12d box, single) = 17,750",
+        "Line 13b = 6,000 senior deduction; AGI 31,250 is below the 75,000 phase-out",
+        "Line 14 = 17,750 + 6,000 = 23,750; line 15 = 31,250 - 23,750 = 7,500",
+        "Line 16 = 10% of 7,500 = 750 (inside the first single bracket)",
+        "Line 25a = W-2 box 2 = 3,400; line 34 refund = 3,400 - 750 = 2,650"
+      ],
+      "pass_criteria": [
+        "Extraction reads W-2 boxes 1 to 6 exactly as printed, none flagged uncertain",
+        "No escalation is raised and nobody has to intervene",
+        "Review passes on the first attempt",
+        "A filled-in 1040-SR (HTML with provenance, and the IRS PDF) is produced from the dashboard",
+        "Every dollar line has a provenance record; lines 1a and 25a point to W-2 'w2_1' boxes 1 and 2 with the extractor and time"
+      ]
+    },
+    {
+      "id": "eval_case_2",
+      "title": "Human-in-the-loop event, resolved by staff",
+      "type": "hitl_resolved",
+      "assignment_reference": "Section 4.4 condition 6 (financial exploitation: refund routed to an account the taxpayer cannot describe), Section 6 D.4",
+      "write_up": "demo/eval_case_2.md",
+      "input_file": "demo/eval_case_2_input.json",
+      "resolution_file": "demo/eval_case_2_resolution.json",
+      "w2_image": "demo/w2_image_2.jpg",
+      "w2_ground_truth": "data/fixtures/w2_scan_2.truth.json",
+      "w2_image_note": "A slightly crooked, noisy 'scanned' W-2 to show the reader copes with a poorer picture. It still reads cleanly.",
+      "taxpayer": {
+        "filing_status": "single",
+        "birth_date": "1958-03-05",
+        "ssn": "902-34-5678 (test number)",
+        "blind": false,
+        "dependents": [],
+        "other_income_documents": "none",
+        "refund_account_owner": "unknown (the taxpayer could not say whose account the refund goes to)"
+      },
+      "trigger": "intake.refund.account_owner = unknown. Rules raises escalation E6 (STOP): 'Refund account is not in the taxpayer's name'.",
+      "run": {
+        "cli": [
+          "python run.py start --input demo/eval_case_2_input.json --thread-id eval-case-2",
+          "python run.py status --thread-id eval-case-2",
+          "python run.py resume --thread-id eval-case-2 --input demo/eval_case_2_resolution.json",
+          "python run.py status --thread-id eval-case-2"
+        ]
+      },
+      "expected": {
+        "w2_extraction": {
+          "boxes": {"1": 24800, "2": 2100, "3": 24800, "4": 1537.6, "5": 24800, "6": 359.6, "a": "***-**-5678"},
+          "unverified": [],
+          "min_confidence": 0.8
+        },
+        "before_resolution": {
+          "status": "awaiting_human",
+          "pending_escalation": "esc_0001",
+          "escalation": {
+            "code": "E6",
+            "kind": "STOP",
+            "raised_by": "rules",
+            "reason": "Refund account is not in the taxpayer's name",
+            "options": ["flag_for_review", "verified_continue", "close_session"]
+          },
+          "draft_lines": "none yet: no return is computed while a STOP escalation is open"
+        },
+        "after_resolution": {
+          "escalation_status": "resolved",
+          "resolution": {"option": "verified_continue", "resolved_by": "demo_staff"},
+          "final_status": "draft_ready",
+          "review_verdict": "pass",
+          "form_1040sr_created": true,
+          "lines": {
+            "1a": 24800, "1z": 24800, "9": 24800, "11a": 24800, "12d": 1, "12e": 17750, "13b": 6000,
+            "14": 23750, "15": 1050, "16": 105, "18": 105, "22": 105, "24": 105,
+            "25a": 2100, "25d": 2100, "33": 2100, "34": 1995
+          }
+        }
+      },
+      "hand_derivation": [
+        "Line 1a/9/11a = 24,800; 12d = 1 (born 5 March 1958); 12e = 17,750; 13b = 6,000; 14 = 23,750",
+        "Line 15 = 24,800 - 23,750 = 1,050; line 16 = 10% of 1,050 = 105",
+        "Line 25a = 2,100; line 34 refund = 2,100 - 105 = 1,995"
+      ],
+      "how_to_resolve": {
+        "why_it_stops": "SilverFile must notice and stop when a refund is routed to an account the taxpayer cannot describe, because elder financial abuse often travels through tax refunds. It does not decide whether anything is wrong; a person does.",
+        "in_the_dashboard": [
+          "1. Start the session: python run.py start --input demo/eval_case_2_input.json --thread-id eval-case-2",
+          "2. Put the staff sign-in in .env (copy .env.example): SILVERFILE_STAFF_IDS=demo_staff and SILVERFILE_STAFF_PASSCODE=silverfile-demo",
+          "3. Start the dashboard: python -m streamlit run streamlit_app.py and open http://localhost:8501",
+          "4. In the sidebar sign in as demo_staff with passcode silverfile-demo (without signing in the page is read-only).",
+          "5. Under HITL queue, find eval-case-2 (code E6, 'Refund account is not in the taxpayer's name') and click Open & resolve.",
+          "6. Read the reason and 'what the taxpayer heard'. Choose the option 'Verified, continue' (nothing is preselected).",
+          "7. Type a note, for example: Phoned the taxpayer; the refund account is in his own name. Verified.",
+          "8. Click Resolve and resume. The session moves to Draft ready.",
+          "9. Open the return: the Escalations tab shows E6 resolved with your staff ID, time, decision and note; the Draft form tab shows the filled 1040-SR with line 34 = 1,995."
+        ],
+        "on_the_command_line": [
+          "python run.py start --input demo/eval_case_2_input.json --thread-id eval-case-2      (prints pending_escalation: esc_0001)",
+          "python run.py resume --thread-id eval-case-2 --input demo/eval_case_2_resolution.json  (the resolution payload is already prepared)",
+          "python run.py status --thread-id eval-case-2      (prints status draft_ready)"
+        ],
+        "other_choices": "close_session ends the case without a return; flag_for_review also stops the draft and leaves it for a volunteer. Only verified_continue produces the finished return."
+      },
+      "pass_criteria": [
+        "Extraction reads the scanned W-2 exactly, none flagged uncertain",
+        "The run pauses with status awaiting_human and exactly one open escalation, E6 esc_0001, and no tax lines are computed yet",
+        "Resolving with verified_continue, a note and a staff ID resumes the same session (nothing is re-asked)",
+        "The escalation record keeps the decision, staff ID, note and time (audit trail)",
+        "Review passes and a filled-in 1040-SR is produced with line 34 = 1,995"
+      ]
+    }
+  ]
+}
