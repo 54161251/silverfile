@@ -34,9 +34,12 @@ def parse_filing_status(answer: str) -> str | None:
     return found.pop() if len(found) == 1 else None
 
 def parse_birth_date(answer: str) -> str | None:
-    """Turn a date like 03/05/1958 or 1958-03-05 into YYYY-MM-DD, or None."""
-    text = answer.strip()
-    for pattern in ("%Y-%m-%d", "%m/%d/%Y", "%B %d, %Y"):
+    """Turn a date like 03/05/1958, 1958-03-05 or March 5, 1958 into YYYY-MM-DD, or None."""
+    text = re.sub(r"(?<=\d)(st|nd|rd|th)\b", "", answer.strip().rstrip("."),
+                  flags=re.IGNORECASE)
+    text = " ".join(text.split())
+    for pattern in ("%Y-%m-%d", "%m/%d/%Y", "%m-%d-%Y", "%B %d, %Y",
+                    "%B %d %Y", "%b %d, %Y", "%b %d %Y"):
         try:
             return datetime.strptime(text, pattern).date().isoformat()
         except ValueError:

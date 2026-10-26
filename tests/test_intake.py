@@ -399,3 +399,10 @@ def test_ssn_never_leaks_into_flags_when_mixed_with_other_content():
         assert state["flags"], text
         assert "901-55-1234" not in str(state), text
         assert "901551234" not in str(state), text
+
+def test_birth_date_accepts_common_ways_of_writing():
+    for text in ["March 5, 1958", "March 5 1958", "Mar 5, 1958", "march 5th, 1958",
+                 "3/5/1958", "03-05-1958", "1958-03-05", "March 5, 1958."]:
+        assert parse_birth_date(text) == "1958-03-05", text
+    for text in ["", "sometime in March", "3/5/58", "31/12/1958"]:
+        assert parse_birth_date(text) is None, text
