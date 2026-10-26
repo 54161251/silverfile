@@ -253,7 +253,12 @@ def locate(words: list[Word], page_size: tuple[int, int]) -> dict[str, Located]:
         neighbours = [o.left for o in labels.values() if o is not label and o.left > label.right
                       and abs(o.top - label.top) < 4 * h]
         if first:
+            # Start the close-ups well left of where the full-page scan says the number begins: that scan can
+            # drop a leading digit, and a crop that starts after the lost digit would never see it. The
+            # margin stops at the cell's own left edge, so a neighbouring cell is never read.
             left = first.left - 12
+            if box != SSN_BOX:                  # (the SSN box keeps its tight crop; its digits are read as a group)
+                left = min(left, max(label.left - 40, first.left - int(3 * first.height), 0))
             top, bottom = first.top - 8, max(w.bottom for w in parts) + 8
             right_cap = left + max(14 * first.height, 360)
         else:                               # nothing seen under the label: look in the area where it should be

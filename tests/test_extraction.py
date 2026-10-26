@@ -362,3 +362,36 @@ def test_a_missing_ocr_engine_fails_loudly_not_silently(monkeypatch):
     monkeypatch.setattr(ocr.TesseractBackend, "available", staticmethod(lambda: False))
     with pytest.raises(extractor.OcrUnavailable, match="Tesseract"):
         extractor.default_backend()
+
+
+# --- regression: an engine that drops a number's first digit on the full-page scan (seen with Tesseract 5.2) ---
+@needs_ocr
+@pytest.mark.parametrize("extra_shift", [0, 10, 20, 30])
+def test_a_dropped_leading_digit_is_never_returned_as_a_confident_wrong_amount(tmp_path, extra_shift):
+    import subprocess, sys
+    from src.extraction.extractor import extract_w2
+    image = tmp_path / "big.png"
+    subprocess.run([sys.executable, str(REPO / "data" / "generate_fixtures.py"), "--custom", str(image), "--wages",
+                    "41250.00", "--withheld", "3300.50", "--ssn", "900-11-2222"], check=True, capture_output=True,
+                   cwd=REPO)
+
+    class DropsLeadingDigit(ocr.TesseractBackend):
+        def read_words(self, image, *, line=False, charset=None):
+            words = super().read_words(image, line=line, charset=charset)
+            if line:
+                return words                                   # close-up crops are left alone
+            out = []
+            for w in words:
+                if len(w.text) >= 8 and w.text[0].isdigit() and "." in w.text and w.text[1:2].isdigit():
+                    step = w.width // len(w.text)
+                    w = Word(text=w.text[1:], left=w.left + step + extra_shift, top=w.top,
+                             width=w.width - step, height=w.height, conf=w.conf)
+                out.append(w)
+            return out
+
+    record, _ = extract_w2(image, "w2_1", backend=DropsLeadingDigit(), now=NOW)
+    for box in ("1", "3", "5"):
+        field = record.fields[box]
+        assert field.value in (None, Decimal("41250.00")), (box, field.value)      # never 1250
+        if field.value is None:
+            assert field.uncertain
