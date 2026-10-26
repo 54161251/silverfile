@@ -33,15 +33,41 @@ def summary(snapshot):
             "notice": "Routing demonstration only; no tax return calculated." if state.get("mode") == "demo" else "Draft only; never filed."}
 
 
+def batch(args):
+    """Spec 4.5: the 10-document batch with the context strategy on or off (src/batch.py)."""
+    from src.agents.intake_briefing import BriefingFailed
+    from src.batch import run_batch, save_run, write_metrics
+    from src.dashboard.auth import load_env_file
+    load_env_file()  # SILVERFILE_MODEL, ANTHROPIC_API_KEY (R6); real environment variables win
+    strategy = "full_history" if args.no_context_strategy else "selective_recall"
+    client = None
+    if not args.estimate:
+        import anthropic
+        client = anthropic.Anthropic()
+    try:
+        rows = run_batch(strategy, client=client, estimate=args.estimate, session_id=args.thread_id)
+    except BriefingFailed as exc:
+        raise SystemExit(f"Batch stopped (E8): {exc}")
+    save_run(strategy, rows, estimate=args.estimate, model=os.getenv("SILVERFILE_MODEL"))
+    print(f"{strategy}: " + ", ".join(f"{row['input_tokens']:,}" for row in rows))
+    print(f"Updated {write_metrics()}")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=["start", "resume", "status", "diagram"])
+    parser.add_argument("action", choices=["start", "resume", "status", "diagram", "batch"])
     parser.add_argument("--thread-id", default="silverfile-demo")
     parser.add_argument("--db", default=os.getenv("SILVERFILE_DB", "runtime/sessions.sqlite"))
     parser.add_argument("--demo", action="store_true")
     parser.add_argument("--hitl", action="store_true", help="Start the synthetic exploitation-review example")
     parser.add_argument("--input", type=Path, help="JSON initial input or resume payload")
+    parser.add_argument("--no-context-strategy", action="store_true",
+                        help="batch: resend the full history for every document (spec 4.5 baseline)")
+    parser.add_argument("--estimate", action="store_true",
+                        help="batch: no API call; estimate input tokens offline")
     args = parser.parse_args()
+    if args.action == "batch":
+        return batch(args)
     try:
         agents = adapters() if args.demo else production_adapters()
         with open_sessions(args.db, agents) as sessions:
