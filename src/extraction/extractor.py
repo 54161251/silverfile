@@ -9,19 +9,14 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from pathlib import Path
 
-from src.extraction.ocr import (OcrBackend, TesseractBackend, UnreadableDocument, file_sha256, load_pages,
-                                read_w2_page)
-from src.extraction.schema import (AGENT_NAME, AGENT_VERSION, MONEY_BOXES, SSN_BOX, SSN_BOX_LABEL,
+from src.extraction.ocr import OcrBackend, TesseractBackend, file_sha256, load_pages, read_w2_page
+from src.extraction.schema import (AGENT_NAME, OcrUnavailable, UnreadableDocument, AGENT_VERSION, MONEY_BOXES, SSN_BOX, SSN_BOX_LABEL,
                                    ExtractedField, FieldProvenance, SsnReading, W2Record)
 
 __all__ = ["OcrUnavailable", "UnreadableDocument", "default_backend", "extract_w2"]
 
 _WITHHELD_REASON = ("this document's Social Security number is not a test number, so no amounts are used "
                     "from it (a person must review)")
-
-
-class OcrUnavailable(RuntimeError):
-    """The OCR engine is not installed. A loud failure beats silently returning empty documents."""
 
 
 _backend: OcrBackend | None = None

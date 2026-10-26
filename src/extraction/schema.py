@@ -38,6 +38,18 @@ MONEY_BOXES: dict[str, str] = {
 SSN_BOX = "a"
 SSN_BOX_LABEL = "Employee's social security number"
 
+IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp", ".webp"}
+SUPPORTED_SUFFIXES = IMAGE_SUFFIXES | {".pdf"}
+
+
+class UnreadableDocument(Exception):
+    """The file is missing, too big, the wrong type, or damaged. The message is safe to log."""
+
+
+class OcrUnavailable(RuntimeError):
+    """The OCR engine is not installed. A loud failure beats silently returning empty documents."""
+
+
 FieldStatus = Literal["read", "uncertain", "unreadable"]
 EntryMethod = Literal["ocr", "supplied_structured_data"]
 

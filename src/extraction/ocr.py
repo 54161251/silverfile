@@ -24,18 +24,14 @@ from typing import Iterable, Protocol
 
 from PIL import Image, ImageOps
 
-from src.extraction.schema import CONFIDENCE_THRESHOLD, MONEY_BOXES, SSN_BOX, SSN_BOX_LABEL, Word
+from src.extraction.schema import (CONFIDENCE_THRESHOLD, IMAGE_SUFFIXES, MONEY_BOXES, SSN_BOX, SSN_BOX_LABEL,
+                                   UnreadableDocument, Word)
 from src.security.ssn import check_ssn
 
 MAX_FILE_BYTES = 15 * 1024 * 1024
 MAX_PIXELS = 40_000_000              # refuses decompression bombs
 MAX_PDF_PAGES = 4
 PDF_DPI = 200
-IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp", ".webp"}
-
-
-class UnreadableDocument(Exception):
-    """The file is missing, too big, the wrong type, or damaged. The message is safe to log."""
 
 
 class OcrBackend(Protocol):

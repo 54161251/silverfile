@@ -25,14 +25,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from src.extraction.contract import structured_passthrough, to_extracted_document, unreadable_document
-from src.extraction.extractor import OcrUnavailable, UnreadableDocument, default_backend, extract_w2
-from src.extraction.ocr import IMAGE_SUFFIXES
+from src.extraction.schema import SUPPORTED_SUFFIXES, OcrUnavailable, UnreadableDocument
 from src.security.pii import install_pii_log_masking, mask_data
 from src.state import validate_update
 
 log = logging.getLogger("silverfile.extraction")
 REPO_ROOT = Path(__file__).resolve().parents[2]
-SUPPORTED_SUFFIXES = IMAGE_SUFFIXES | {".pdf"}
 
 
 def _find_file(name: str | None) -> Path | None:
@@ -86,6 +84,9 @@ def extract_upload(upload: dict, *, session_id: str | None = None, backend=None,
     if form != "W-2":
         log.warning("document %s: only W-2 images can be read (got %s)", doc_id, form)
         return unreadable_document(doc_id, form, path.name, "only_w2_images_are_supported", now)
+    # Imported here so the agent module loads (and structured demo uploads work) even where Pillow or the
+    # OCR engine is not installed; only reading a real image needs them.
+    from src.extraction.extractor import extract_w2
     try:
         record, sha = extract_w2(path, doc_id, backend=backend, now=now)
     except UnreadableDocument as exc:
@@ -119,6 +120,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     install_pii_log_masking()
     try:
+        from src.extraction.extractor import default_backend
         default_backend()
     except OcrUnavailable as exc:
         print(f"error: {exc}", file=sys.stderr)
