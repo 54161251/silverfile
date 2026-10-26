@@ -208,6 +208,10 @@ def handle_answer(state: dict, answer: str, turn_id: int) -> dict:
         flags.append(make_flag("advice_request", turn_id, answer))
         return {"intake": intake, "flags": flags}
 
+    if contains_ssn(answer) and question["field"] != "ssn":
+        flags.append(make_flag("ssn_volunteered", turn_id, ""))
+        return {"intake": intake, "flags": flags}
+    
     value = question["parser"](answer)
     if value is None:
         flags.append(make_flag("uncertain_answer", turn_id, answer))
@@ -265,6 +269,11 @@ def run_interactive(state: dict) -> dict:
         intake, flags = result["intake"], result["flags"]
         if any(f["type"] == "advice_request" for f in flags[before:]):
             notice = ESCALATION_CATALOG["E4"]["user_message"]
+            continue
+        
+        if any(f["type"] == "ssn_volunteered" for f in flags[before:]):
+            notice = ("You don't need to share your Social Security number "
+                      "right now, so I have not saved it.")
             continue
         next_q = next_question(intake)
         return {"intake": intake, "flags": flags,

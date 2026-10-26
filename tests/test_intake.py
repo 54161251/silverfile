@@ -8,7 +8,8 @@ from src.agents.intake import (
     run,
     run_interactive,
     build_summary,
-    parse_ssn
+    parse_ssn,
+    handle_answer
 )
 
 
@@ -149,3 +150,10 @@ def test_ssn_accepts_only_900_series():
     assert parse_ssn("901551234") == "901-55-1234"
     assert parse_ssn("123-45-6789") is None
     assert parse_ssn("banana") is None
+
+def test_volunteered_ssn_is_not_saved_and_flag_has_no_number():
+    result = handle_answer({}, "my ssn is 123-45-6789", 1)
+    assert result["intake"] == {}
+    flag = result["flags"][0]
+    assert flag["type"] == "ssn_volunteered"
+    assert "6789" not in flag["excerpt"]
