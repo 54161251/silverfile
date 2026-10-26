@@ -64,6 +64,19 @@ an escalation resolved with a continuing option no longer blocks scope.
   and for each dependent's name, SSN and relationship. P1: route to Intake while it is
   non-empty.
 
+## Extraction flags (P4) — added October 26
+
+| Document state | Escalation | Staff resolution that works today |
+|---|---|---|
+| flag `ssn_not_test_range` (W-2 SSN outside 900-999) | E7 STOP | `close_session` |
+| flag `unreadable_document:*` | E8 | none yet: needs corrected-document handling (P1/P4), otherwise E10 |
+| box in `unverified` that Computation uses (W-2 1, 2; 1099-INT 1, 3, 4, 8; 1099-DIV 1a, 1b, 4; 1099-R 1, 2a, 4, qcd_amount; SSA-1099 5, 6) and no `user_inputs["<doc_id>.<box>"]` | E8 | `enter_value` with override `user_inputs.<doc_id>.<box>` |
+| flag `ssn_unreadable` | none (SSN not used on the return) | — |
+
+The unverified-box rule is an interim reading of D4 (Intake confirms low-confidence
+values): Intake does not ask for them yet, and without this rule the session ends in E10
+with no reason shown. If P3 adds confirmation questions, Rules should drop this check.
+
 ## Gaps in the team doc — proposed fixes (needs P1 approval)
 
 1. **Who writes escalation records.** E4/E8 say "raised by Intake" and E2 says "Rules or

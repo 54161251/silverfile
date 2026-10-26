@@ -306,6 +306,42 @@ def test_E7_standard_deduction_chart_does_not_apply(changes):
     assert "E7" in codes(rules.run(make(**changes)))
 
 
+# --- Document checks: Extraction flags and low-confidence boxes ---------------------------------
+
+def with_w2(**fields):
+    docs = copy.deepcopy(CLEAN["documents"])
+    docs[0] |= fields
+    return docs
+
+
+def test_E7_w2_with_non_test_ssn():
+    out = rules.run(make(documents=with_w2(boxes={"1": None, "2": None},
+                                           flags=["ssn_not_test_range"])))
+    assert codes(out) == ["E7"]
+    assert out["escalations"][0]["kind"] == "STOP"
+
+
+def test_E8_unreadable_document():
+    docs = with_w2(boxes={}, flags=["unreadable_document:file_not_found_or_unsupported_type"])
+    assert codes(rules.run(make(documents=docs))) == ["E8"]
+
+
+def test_E8_unconfirmed_low_confidence_box_the_return_uses():
+    out = rules.run(make(documents=with_w2(unverified=["2"])))
+    assert codes(out) == ["E8"]
+    assert out["escalations"][0]["evidence"] == ["doc:w2_1.box.2"]
+
+
+def test_D4_confirmed_low_confidence_box_does_not_escalate():
+    state = make(documents=with_w2(unverified=["2"]),
+                 user_inputs={"w2_1.2": {"value": 5120, "kind": "human_resolution"}})
+    assert codes(rules.run(state)) == []
+
+
+def test_D4_low_confidence_box_the_return_does_not_use_is_ignored():
+    assert codes(rules.run(make(documents=with_w2(unverified=["3"], flags=["ssn_unreadable"])))) == []
+
+
 # --- E8: honest uncertainty -----------------------------------------------------------------------
 
 def test_E8_uncertain_answer_is_gate():

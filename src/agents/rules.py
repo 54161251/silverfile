@@ -39,6 +39,20 @@ BOX_1099R_NOT_DETERMINED = "2b_not_determined"
 BOX_1099DIV_CAP_GAIN = "2a"
 DOC_FLAG_NOT_DETERMINED = "taxable_amount_not_determined"
 
+# Extraction flags (P4, src/extraction/contract.py).
+DOC_FLAG_REAL_SSN = "ssn_not_test_range"
+DOC_FLAG_UNREADABLE = "unreadable_document:"
+
+# Boxes the C-rules take from each form (C1-C6, C17). An unconfirmed low-confidence
+# value in one of these blocks the return; other boxes are not used.
+USED_BOXES = {
+    "W-2": {"1", "2"},
+    "1099-INT": {"1", "3", "4", "8"},
+    "1099-DIV": {"1a", "1b", "4"},
+    "1099-R": {"1", "2a", "4", "qcd_amount"},
+    "SSA-1099": {"5", "6"},
+}
+
 # Escalation catalog: kind, staff options and the sentence the user hears.
 # Options are the snake_case versions of the "Staff resolution options" column.
 _SPECIALIST = "That part needs one of our specialists. I've passed it on, and someone will contact you."
@@ -109,6 +123,7 @@ def run(state: dict) -> dict:
     box_count = _count_12d_boxes(intake, status, eligibility, d)
     _check_standard_deduction_exclusions(intake, status, d)
     _check_documents(intake, documents, d)
+    _check_document_quality(documents, user_inputs, d)
     _check_intake_scope(intake, status, documents, d)
     _check_refund_account(intake, status, d)
     _check_flags(flags, d)
@@ -316,6 +331,26 @@ def _check_documents(intake: dict, documents: list[dict], d: _Decisions):
             d.escalate("E1", "1099-DIV capital gain distributions", [_fp(ref, cap_gain)],
                        "dividends")
     d.cite("documents_checked", "in-scope-documents")
+
+
+def _check_document_quality(documents: list[dict], user_inputs: dict, d: _Decisions):
+    """Extraction flags and low-confidence boxes (A19, D4).
+
+    Without these, a blocked document only shows up later as Computation open
+    questions that Intake cannot answer, and the session ends in E10 with no reason.
+    """
+    anchor = "document-checks"
+    for doc in documents:
+        doc_id, form, flags = doc.get("doc_id"), doc.get("form"), doc.get("flags") or []
+        ref = f"doc:{doc_id}"
+        if DOC_FLAG_REAL_SSN in flags:
+            d.escalate("E7", f"{form} shows an SSN outside the 900-999 test range", [ref], anchor)
+        if any(str(f).startswith(DOC_FLAG_UNREADABLE) for f in flags):
+            d.escalate("E8", f"{form} could not be read", [ref], anchor)
+        for box in sorted(set(doc.get("unverified") or []) & USED_BOXES.get(form, set())):
+            if user_inputs.get(f"{doc_id}.{box}") is None:
+                d.escalate("E8", f"{form} box {box} was not read confidently",
+                           [f"{ref}.box.{box}"], anchor)
 
 
 def _check_intake_scope(intake: dict, status: str | None, documents: list[dict], d: _Decisions):
