@@ -161,6 +161,12 @@ def _is_filled(intake: dict, question: dict) -> bool:
     source = intake.get(group) or {} if group else intake
     return source.get(field) not in (None, "")
 
+def question_for_path(path: str) -> dict | None:
+    """Find the question whose full field path equals `path`."""
+    for question in QUESTIONS:
+        if field_path(question) == path:
+            return question
+    return None
 
 def next_question(intake: dict) -> dict | None:
     """Return the first applicable question that has no answer yet, or None."""
