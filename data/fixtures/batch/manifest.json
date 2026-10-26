@@ -1,0 +1,54 @@
+{
+  "uploads": [
+    {
+      "doc_id": "w2_batch_01",
+      "source_file": "data/fixtures/batch/w2_batch_01.jpg",
+      "form": "W-2"
+    },
+    {
+      "doc_id": "w2_batch_02",
+      "source_file": "data/fixtures/batch/w2_batch_02.jpg",
+      "form": "W-2"
+    },
+    {
+      "doc_id": "w2_batch_03",
+      "source_file": "data/fixtures/batch/w2_batch_03.jpg",
+      "form": "W-2"
+    },
+    {
+      "doc_id": "w2_batch_04",
+      "source_file": "data/fixtures/batch/w2_batch_04.jpg",
+      "form": "W-2"
+    },
+    {
+      "doc_id": "w2_batch_05",
+      "source_file": "data/fixtures/batch/w2_batch_05.jpg",
+      "form": "W-2"
+    },
+    {
+      "doc_id": "w2_batch_06",
+      "source_file": "data/fixtures/batch/w2_batch_06.jpg",
+      "form": "W-2"
+    },
+    {
+      "doc_id": "w2_batch_07",
+      "source_file": "data/fixtures/batch/w2_batch_07.jpg",
+      "form": "W-2"
+    },
+    {
+      "doc_id": "w2_batch_08",
+      "source_file": "data/fixtures/batch/w2_batch_08.jpg",
+      "form": "W-2"
+    },
+    {
+      "doc_id": "w2_batch_09",
+      "source_file": "data/fixtures/batch/w2_batch_09.jpg",
+      "form": "W-2"
+    },
+    {
+      "doc_id": "w2_batch_10",
+      "source_file": "data/fixtures/batch/w2_batch_10.jpg",
+      "form": "W-2"
+    }
+  ]
+}

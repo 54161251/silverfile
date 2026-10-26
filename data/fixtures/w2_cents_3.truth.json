@@ -1,0 +1,14 @@
+{
+  "name": "w2_cents_3",
+  "style": "clean",
+  "ssn": "903-45-6789",
+  "boxes": {
+    "1": "48213.57",
+    "2": "0.00",
+    "3": "48213.57",
+    "4": "2989.24",
+    "5": "48213.57",
+    "6": "699.09"
+  },
+  "note": "Synthetic data. Boxes are dollars and cents as printed; null means the box is blank."
+}
