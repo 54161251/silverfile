@@ -168,8 +168,15 @@ def question_for_path(path: str) -> dict | None:
             return question
     return None
 
-def next_question(intake: dict) -> dict | None:
-    """Return the first applicable question that has no answer yet, or None."""
+def next_question(intake: dict, missing: list | None = None) -> dict | None:
+    """Return the next question to ask, or None.
+
+    Paths named by Rules (`missing`) come first; otherwise follow QUESTIONS order.
+    """
+    for path in missing or []:
+        question = question_for_path(path)
+        if question is not None and not _is_filled(intake, question):
+            return question
     for question in QUESTIONS:
         condition = question.get("only_if")
         if condition and not condition(intake):
@@ -252,7 +259,7 @@ def handle_answer(state: dict, answer: str, turn_id: int) -> dict:
     intake = state.get("intake") or {}
     flags = list(state.get("flags") or [])
 
-    question = next_question(intake)
+    question = next_question(intake, (state.get("eligibility") or {}).get("missing"))
     if question is None:
         return {"intake": intake, "flags": flags}
 
@@ -337,7 +344,7 @@ def run_interactive(state: dict) -> dict:
             continue
 
 
-        next_q = next_question(intake)
+        next_q = next_question(intake, (state.get("eligibility") or {}).get("missing"))
         return {"intake": intake, "flags": flags,
                 "session_summary": build_summary(intake),
                 "open_questions": [field_path(next_q)] if next_q else []}

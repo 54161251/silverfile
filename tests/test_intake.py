@@ -37,7 +37,6 @@ def test_questions_asked_in_order():
     assert next_question({})["field"] == "filing_status"
     assert next_question({"filing_status": "single"})["field"] == "birth_date"
 
-
 def test_false_answer_is_not_asked_again():
     intake = {"filing_status": "single",
                 "taxpayer": {"birth_date": "1958-03-05", "blind": False,
@@ -232,3 +231,12 @@ def test_spouse_questions_only_asked_when_married_joint():
     assert paths == ["intake.spouse.birth_date", "intake.spouse.ssn",
                      "intake.spouse.blind"]
     assert next_question(state) is None
+
+def test_rules_missing_path_is_asked_first():
+    intake = {"filing_status": "mfj",
+              "taxpayer": {"birth_date": "1958-03-05", "ssn": "901-55-1234",
+                           "blind": False},
+              "dual_status_alien": False,
+              "can_be_claimed_as_dependent": False}
+    q = next_question(intake, ["intake.spouse.ssn"])
+    assert field_path(q) == "intake.spouse.ssn"
