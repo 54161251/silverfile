@@ -410,7 +410,7 @@ def make_flag(flag_type: str, turn_id: int, excerpt: str = "") -> dict:
         "id": f"flag_{turn_id}_{flag_type}",
         "type": flag_type,
         "turn_id": turn_id,
-        "excerpt": excerpt,
+        "excerpt": SSN_ANYWHERE.sub("[SSN removed]", excerpt),
         "raised_at": now.isoformat(),
     }
 

@@ -366,3 +366,36 @@ def test_filing_status_understands_sentences_but_does_not_guess():
     assert parse_filing_status("I am not married") is None
     assert parse_filing_status("my husband passed away, I am a widow") is None
     assert parse_filing_status("I was single, now married") is None
+
+def test_two_corrections_in_a_row_flag_but_change_nothing():
+    state = {"intake": {}}
+    q = next_question(state["intake"])
+    state = handle_answer(state, "single", 1, q)
+    q = next_question(state["intake"])
+    assert q["field"] == "birth_date"
+    state = handle_answer(state, "sorry, I meant married", 2, q)
+    state = handle_answer(state, "sorry, I meant single", 3, q)
+    assert state["intake"] == {"filing_status": "single"}
+    assert [f["type"] for f in state["flags"]] == ["contradiction", "contradiction"]
+    assert next_question(state["intake"])["field"] == "birth_date"
+
+def test_empty_and_garbled_answers_are_uncertain_and_change_nothing():
+    state = {"intake": {}}
+    q = next_question(state["intake"])
+    for turn, text in enumerate(["", "   ", "asdf qwerty ???"], 1):
+        state = handle_answer(state, text, turn, q)
+    assert state["intake"] == {}
+    assert [f["type"] for f in state["flags"]] == ["uncertain_answer"] * 3
+    assert next_question(state["intake"])["field"] == "filing_status"
+
+def test_ssn_never_leaks_into_flags_when_mixed_with_other_content():
+    q = next_question({})
+    for turn, text in enumerate([
+        "Should I take the standard deduction? My SSN is 901-55-1234",
+        "I'm helping my mother, her number is 901551234",
+        "sorry, I meant single, my ssn is 901-55-1234",
+    ], 1):
+        state = handle_answer({"intake": {}}, text, turn, q)
+        assert state["flags"], text
+        assert "901-55-1234" not in str(state), text
+        assert "901551234" not in str(state), text
