@@ -217,13 +217,15 @@ QUESTIONS = [
         "group": None,
         "field": "dual_status_alien",
         "text": "Were you a nonresident of the United States for part of 2025? "
-                "Please answer yes or no.",
+                "This mainly applies to people who moved to or from the "
+                "United States during the year. Please answer yes or no.",
         "parser": parse_yes_no,
     },
     {
         "group": None,
         "field": "can_be_claimed_as_dependent",
         "text": "Can someone else list you as a dependent on their tax return? "
+                "For example, a relative who pays most of your living costs. "
                 "Please answer yes or no.",
         "parser": parse_yes_no,
     },
