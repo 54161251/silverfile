@@ -109,12 +109,34 @@ def looks_like_third_party(answer: str) -> bool:
 
 CORRECTION_PHRASES = (
     "i made a mistake", "i was wrong", "sorry, i meant", "i meant to say",
-    "go back", "previous question", "change my answer", "that was wrong",
+    "change my answer", "that was wrong",
 )
 
 def looks_like_correction(answer: str) -> bool:
     text = answer.lower()
     return any(phrase in text for phrase in CORRECTION_PHRASES)
+
+BACK_PHRASES = ("go back", "previous question", "back up", "last question",
+                "the one before")
+
+
+def wants_to_go_back(answer: str) -> bool:
+    text = answer.lower()
+    return any(phrase in text for phrase in BACK_PHRASES)
+
+
+def previous_question(intake: dict, current: dict | None = None) -> dict | None:
+    """The last answered question that comes before `current` in QUESTIONS."""
+    last = None
+    for question in QUESTIONS:
+        if question is current:
+            break
+        condition = question.get("only_if")
+        if condition and not condition(intake):
+            continue
+        if _is_filled(intake, question):
+            last = question
+    return last
 
 OUT_OF_SCOPE_KEYWORDS = {
     "itemize": ("itemize", "itemized", "schedule a"),
@@ -332,12 +354,12 @@ def handle_filing_status_answer(state: dict, answer: str, turn_id: int) -> dict:
 
     return {"intake": intake, "flags": flags}
 
-def handle_answer(state: dict, answer: str, turn_id: int) -> dict:
+def handle_answer(state: dict, answer: str, turn_id: int, question: dict | None = None) -> dict:
     """Process one answer for whichever question is currently open."""
     intake = state.get("intake") or {}
     flags = list(state.get("flags") or [])
 
-    question = next_question(intake)
+    question = question or next_question(intake)
     if question is None:
         return {"intake": intake, "flags": flags}
 
@@ -396,51 +418,58 @@ def run(state: dict) -> dict:
 def run_interactive(state: dict) -> dict:
     intake = state.get("intake") or {}
     flags = list(state.get("flags") or [])
+    missing = (state.get("eligibility") or {}).get("missing")
     notice = build_summary(intake)
+    target = None  # a question the user asked to revisit
 
     while True:
-        question = next_question(intake)
+        question = target or next_question(intake, missing)
         if question is None:
-                return {"intake": intake, "flags": flags, "open_questions": [],
+            return {"intake": intake, "flags": flags, "open_questions": [],
                     "session_summary": build_summary(intake)}
-
-
 
         reply = interrupt({
             "type": "intake",
             "question": (notice + " " if notice else "") + question["text"],
             "fields": [field_path(question)],
         })
+
+        if wants_to_go_back(reply["answer"]):
+            earlier = previous_question(intake, question)
+            if earlier is None:
+                notice = "We are at the first question, so there is nothing earlier to go back to."
+            else:
+                target = earlier
+                notice = "Of course, let's go back to that one. Your other answers are safe."
+            continue
+
         before = len(flags)
         result = handle_answer(
-            {"intake": intake, "flags": flags}, reply["answer"], len(flags) + 1
+            {"intake": intake, "flags": flags}, reply["answer"], len(flags) + 1, question
         )
         intake, flags = result["intake"], result["flags"]
-        if any(f["type"] == "advice_request" for f in flags[before:]):
+        new = {f["type"] for f in flags[before:]}
+
+        if "advice_request" in new:
             notice = ESCALATION_CATALOG["E4"]["user_message"]
             continue
-        
-        if any(f["type"] == "ssn_volunteered" for f in flags[before:]):
+        if "ssn_volunteered" in new:
             notice = ("You don't need to share your Social Security number "
                       "right now, so I have not saved it.")
             continue
-        
-        if any(f["type"] == "third_party_answering" for f in flags[before:]):
+        if "third_party_answering" in new:
             notice = ESCALATION_CATALOG["E6"]["user_message"]
             continue
-
-        if any(f["type"] == "contradiction" for f in flags[before:]):
+        if "contradiction" in new:
             notice = ("No problem. Your earlier answers are safe. "
                       "Let's finish this question first, and a colleague "
                       "can fix anything that needs changing.")
             continue
-
-        if any(f["type"] == "out_of_scope_mention" for f in flags[before:]):
+        if "out_of_scope_mention" in new:
             notice = ESCALATION_CATALOG["E1"]["user_message"]
             continue
 
-
-        next_q = next_question(intake, (state.get("eligibility") or {}).get("missing"))
+        next_q = next_question(intake, missing)
         return {"intake": intake, "flags": flags,
                 "session_summary": build_summary(intake),
                 "open_questions": [field_path(next_q)] if next_q else []}

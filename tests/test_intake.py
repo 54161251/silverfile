@@ -298,3 +298,32 @@ def test_out_of_scope_mention_is_flagged_and_not_saved():
     result = handle_answer({}, "I have rental income too", 1)
     assert result["intake"] == {}
     assert result["flags"][0]["type"] == "out_of_scope_mention"
+
+def test_go_back_detection_and_previous_question():
+    assert wants_to_go_back("Can we go back?")
+    assert not wants_to_go_back("single")
+    intake = {"filing_status": "single"}
+    assert previous_question(intake, QUESTIONS[1])["field"] == "filing_status"
+    assert previous_question({}, QUESTIONS[0]) is None
+
+
+def test_go_back_reasks_previous_question_and_keeps_answers():
+    from langgraph.checkpoint.memory import MemorySaver
+    from langgraph.graph import END, START, StateGraph
+    from langgraph.types import Command
+
+    builder = StateGraph(dict)
+    builder.add_node("intake", run_interactive)
+    builder.add_edge(START, "intake")
+    builder.add_edge("intake", END)
+    graph = builder.compile(checkpointer=MemorySaver())
+    config = {"configurable": {"thread_id": "t6"}}
+
+    first = graph.invoke({"intake": {"filing_status": "single"}}, config)
+    assert first["__interrupt__"][0].value["fields"] == ["intake.taxpayer.birth_date"]
+    second = graph.invoke(Command(resume={"answer": "can we go back"}), config)
+    payload = second["__interrupt__"][0].value
+    assert payload["fields"] == ["intake.filing_status"]
+    assert "Of course" in payload["question"]
+    final = graph.invoke(Command(resume={"answer": "married"}), config)
+    assert final["intake"]["filing_status"] == "mfj"
