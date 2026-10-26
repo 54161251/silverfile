@@ -44,6 +44,7 @@ class SessionSummary:
     pending: dict | None = None            # open escalation awaiting staff, if any
     open_codes: list[str] = field(default_factory=list)
     intake_fields: list[str] = field(default_factory=list)  # questions the taxpayer must answer
+    question: str | None = None            # the question Intake is waiting on, as the taxpayer sees it
 
     @property
     def group_label(self) -> str:
@@ -105,6 +106,7 @@ def summarize(thread_id: str, snapshot) -> SessionSummary:
         pending=staff_waits[0]["escalation"] if staff_waits else None,
         open_codes=[e["code"] for e in escalations if e.get("status") == "open"],
         intake_fields=[f for w in intake_waits for f in w.get("fields", [])],
+        question=next((w.get("question") for w in intake_waits if w.get("question")), None),
     )
 
 

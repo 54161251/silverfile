@@ -36,6 +36,13 @@ Tool: Claude (Opus 5.5) in a Claude session linked to my local clone. Scope: P7 
 7. The first Streamlit tests chained `.click()` into `run()`, which fails because `click()`
    returns the widget, not the app.
 
+## Taxpayer page (October 25)
+Claude checked Zimo's Intake contract against P1's session API, ran his five questions end to end,
+then wrote `src/ui/` and `tests/test_taxpayer_page.py`. Found during that work: Kaiwen's graph and
+`Sessions.resume` store the raw answer in the checkpoint before Intake runs, so SSN screening was
+moved into the UI; the existing dashboard app tests assumed the staff page was the default page and
+were changed to load it directly.
+
 ## What I (David) must still do
 - Read every file before committing (R20) and run `pytest` and the app on my own machine.
 - Record the demo video (5–10 min).
