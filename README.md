@@ -92,6 +92,12 @@ python -m pytest -q
 python run.py start --demo --thread-id first-demo
 ```
 
+Reading W-2 images (both eval cases in `demo/`) also needs the Tesseract OCR program,
+which pip cannot install: `brew install tesseract` (macOS), `sudo apt-get install
+tesseract-ocr` (Ubuntu), or the UB Mannheim installer (Windows). Without it the image
+tests are skipped and an image upload stops with an "OCR is not installed" error. The
+Docker image and CI already include it.
+
 The demo uses synthetic structured documents, real Intake and Rules, and placeholder
 Extraction/Computation/Review adapters. It ends as **scaffold_complete**, not a
 completed tax return. No API key is needed. See [persistent human-review walkthrough](demo/P1_WALKTHROUGH.md)
