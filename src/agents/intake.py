@@ -257,6 +257,27 @@ def _is_filled(intake: dict, question: dict) -> bool:
     group, field = question["group"], question["field"]
     source = intake.get(group) or {} if group else intake
     return source.get(field) not in (None, "")
+import re as _re
+
+DEPENDENT_QUESTIONS = {
+    "name": ("What is this person's first name?", None),
+    "relationship": ("How is this person related to you? For example: "
+                     "son, daughter, grandchild, parent.", None),
+    "ssn": ("What is this person's Social Security number? For this practice "
+            "system, please use only a test number that starts with 9.", parse_ssn),
+}
+
+
+def dependent_question(path: str) -> dict | None:
+    """Build a question for paths like intake.dependents.0.ssn."""
+    match = _re.fullmatch(r"intake\.dependents\.(\d+)\.(name|relationship|ssn)", path)
+    if not match:
+        return None
+    index, field = int(match.group(1)), match.group(2)
+    text, parser = DEPENDENT_QUESTIONS[field]
+    return {"group": f"dependents.{index}", "field": field, "text": text,
+            "parser": parser or (lambda answer: answer.strip() or None),
+            "dependent_index": index}
 
 def question_for_path(path: str) -> dict | None:
     """Find the question whose full field path equals `path`."""
@@ -473,3 +494,4 @@ def run_interactive(state: dict) -> dict:
         return {"intake": intake, "flags": flags,
                 "session_summary": build_summary(intake),
                 "open_questions": [field_path(next_q)] if next_q else []}
+    
