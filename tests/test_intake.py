@@ -340,3 +340,29 @@ def test_rules_named_dependent_path_is_asked_and_saved():
     ssn_q = dependent_question("intake.dependents.0.ssn")
     result = handle_answer(result, "901-55-1234", 2, ssn_q)
     assert result["intake"]["dependents"][0]["ssn"] == "901-55-1234"
+
+def test_dependent_fields_are_asked_in_order():
+    missing = [
+        "intake.dependents.0.name",
+        "intake.dependents.0.relationship",
+        "intake.dependents.0.ssn",
+    ]
+    intake = {}
+    asked = []
+    for turn, answer in enumerate(["Sam", "grandson", "901-55-1234"], 1):
+        q = next_question(intake, missing)
+        asked.append(field_path(q))
+        intake = handle_answer({"intake": intake}, answer, turn, q)["intake"]
+    assert asked == missing
+    assert intake["dependents"][0] == {
+        "name": "Sam", "relationship": "grandson", "ssn": "901-55-1234"}
+    assert next_question(intake, missing)["field"] == "filing_status"
+
+def test_filing_status_understands_sentences_but_does_not_guess():
+    assert parse_filing_status("I am married") == "mfj"
+    assert parse_filing_status("Actually, I'm single.") == "single"
+    assert parse_filing_status("married, filing separately") == "mfs"
+    assert parse_filing_status("I am the head of household") == "hoh"
+    assert parse_filing_status("I am not married") is None
+    assert parse_filing_status("my husband passed away, I am a widow") is None
+    assert parse_filing_status("I was single, now married") is None

@@ -14,8 +14,24 @@ FILING_STATUS_CHOICES = {
 
 
 def parse_filing_status(answer: str) -> str | None:
-    """Turn what the user said into one of single/mfj/mfs/hoh/qss, or None."""
-    return FILING_STATUS_CHOICES.get(answer.strip().lower())
+    """Turn what the user said into one of single/mfj/mfs/hoh, or None."""
+    text = answer.strip().lower()
+    exact = FILING_STATUS_CHOICES.get(text)
+    if exact:
+        return exact
+    words = set(re.findall(r"[a-z]+", text))
+    # Unclear, negated, or human-path cases: do not guess.
+    if words & {"widow", "widowed", "widower", "not", "never",
+                "unmarried", "divorced", "separated"}:
+        return None
+    found = set()
+    if "single" in words:
+        found.add("single")
+    if "head" in words and "household" in words:
+        found.add("hoh")
+    if "married" in words:
+        found.add("mfs" if words & {"separately", "separate"} else "mfj")
+    return found.pop() if len(found) == 1 else None
 
 def parse_birth_date(answer: str) -> str | None:
     """Turn a date like 03/05/1958 or 1958-03-05 into YYYY-MM-DD, or None."""
