@@ -1,0 +1,53 @@
+{
+  "intake": {
+    "filing_status": "mfj",
+    "taxpayer": {
+      "birth_date": "1957-09-14",
+      "ssn": "903-45-6789",
+      "blind": false
+    },
+    "spouse": {
+      "birth_date": "1963-02-20",
+      "ssn": "904-56-7890",
+      "blind": true
+    },
+    "dual_status_alien": false,
+    "can_be_claimed_as_dependent": false,
+    "document_inventory": [
+      "W-2",
+      "SSA-1099",
+      "1099-INT"
+    ],
+    "refund": {
+      "method": "direct_deposit",
+      "account_owner": "joint"
+    }
+  },
+  "uploads": [
+    {
+      "doc_id": "w2_1",
+      "form": "W-2",
+      "source_file": "evals/p6_grader_sim/w2_mfj.jpg"
+    },
+    {
+      "doc_id": "ssa_1",
+      "form": "SSA-1099",
+      "boxes": {
+        "5": 22800,
+        "6": 0
+      }
+    },
+    {
+      "doc_id": "int_1",
+      "form": "1099-INT",
+      "boxes": {
+        "1": 640,
+        "4": 0,
+        "8": 0
+      }
+    }
+  ],
+  "user_inputs": {
+    "26": 500
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "name": "w2_mfj",
+  "style": "scan",
+  "ssn": "903-45-6789",
+  "boxes": {
+    "1": "48900.00",
+    "2": "4150.00",
+    "3": "48900.00",
+    "4": "3031.80",
+    "5": "48900.00",
+    "6": "709.05"
+  },
+  "note": "Synthetic data. Boxes are dollars and cents as printed; null means the box is blank."
+}
