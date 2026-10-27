@@ -17,12 +17,12 @@ reached the draft without an escalation. Findings are sorted so the most upstrea
 since fixing an extraction error also changes everything computed after it. Review cannot raise
 escalations itself, so anything that needs a person is sent back to the rules agent.
 
-Twenty tests cover review. All clean golden returns pass, and seventeen planted errors, such as a
+Twenty-one tests cover review. All clean golden returns pass, and seventeen planted errors, such as a
 wrong tax amount, a stale wage figure or an unescalated 1099-R, each produce the expected finding
 and go to the right agent.
 
 On the DevOps side, a GitHub Actions workflow runs the full test suite on every pull request and
-every push to main, then computes and reviews three golden returns from start to finish. It
+every push to main, then computes and reviews all six clean golden returns from start to finish. It
 installs Tesseract so the W-2 image tests run too. A
 Docker image packages the whole system. One command builds it and starts the staff dashboard,
 and two demo sessions are created on first start so a grader sees a finished draft and one waiting
