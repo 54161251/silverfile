@@ -214,16 +214,18 @@ EDGE_CASES = [
     W2Spec(name="w2_real_looking_ssn", seed=66, employee_name="Casey Notreal", ssn="123-45-6789"),
 ]
 
-_FIRST = ["Alma", "Bruno", "Celia", "Dev", "Esme", "Felix", "Greta", "Hugo", "Ines", "Jules"]
-_LAST = ["Fakename", "Testerman", "Mockford", "Samplewood", "Placeholder", "Dummyfield", "Examplar",
-         "Trialson", "Stubbs", "Notreal"]
 _EMPLOYERS = ["Acme Demo Works", "Blue Test Dairy Co.", "Cedar Mock Clinic", "Delta Sample Freight",
               "Evergreen Fake Foods", "Fairview Pretend Bank", "Granite Trial Hardware",
               "Harbor Dummy Marine", "Iris Example Labs", "Juniper Sandbox Schools"]
 
 
+# A24 / D1: the batch is 10 documents for ONE household, so every W-2 has the same employee.
+BATCH_EMPLOYEE = ("Rosa Batchwell", "906-12-3456")
+
+
 def batch_specs(count: int = 10) -> list[W2Spec]:
-    """Ten different fake W-2s for the batch / context-window measurement (TEAM.md: P4 -> P3)."""
+    """Ten fake W-2s from ten employers for one taxpayer: the batch / context-window measurement
+    (TEAM.md: P4 -> P3)."""
     rng = random.Random(2025)
     specs = []
     for n in range(count):
@@ -231,9 +233,10 @@ def batch_specs(count: int = 10) -> list[W2Spec]:
         withheld = (wages * Decimal(rng.choice(["0.06", "0.08", "0.10", "0.12"]))).quantize(Decimal("0.01"))
         ss_tax = (wages * Decimal("0.062")).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
         med_tax = (wages * Decimal("0.0145")).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        rng.randrange(10, 99), rng.randrange(1000, 9999)  # formerly per-document SSN digits; keeps amounts stable
         specs.append(W2Spec(
             name=f"w2_batch_{n + 1:02d}", seed=100 + n, style="clean",
-            employee_name=f"{_FIRST[n]} {_LAST[n]}", ssn=f"9{n:02d}-{rng.randrange(10, 99)}-{rng.randrange(1000, 9999)}",
+            employee_name=BATCH_EMPLOYEE[0], ssn=BATCH_EMPLOYEE[1],
             ein=f"98-{rng.randrange(1000000, 9999999)}", employer_name=_EMPLOYERS[n],
             control_number=f"C{n + 1:04d}", wages=str(wages), withheld=str(withheld), ss_wages=str(wages),
             ss_tax=str(ss_tax), medicare_wages=str(wages), medicare_tax=str(med_tax),
