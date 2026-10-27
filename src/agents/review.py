@@ -80,9 +80,13 @@ def _scalar(raw):
 
 
 def _box(document: dict, box: str, user_inputs: dict):
-    """The box value Computation should have used: a taxpayer-confirmed value for unverified boxes."""
+    """The box value Computation should have used: a value confirmed by the taxpayer or entered by
+    staff (user_inputs["<doc_id>.<box>"]) replaces the printed box; an unverified box has no other."""
+    override = user_inputs.get(f"{document['doc_id']}.{box}")
+    if override is not None:
+        return _scalar(override)
     if box in (document.get("unverified") or []):
-        return _scalar(user_inputs.get(f"{document['doc_id']}.{box}"))
+        return None
     return (document.get("boxes") or {}).get(box)
 
 
