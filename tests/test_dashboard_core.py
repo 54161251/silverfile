@@ -109,6 +109,16 @@ def test_E5_set_filing_status_requires_a_valid_status():
     assert payload["overrides"] == {"intake.filing_status": "qss"}
 
 
+def test_E3_E8_document_escalations_suggest_the_box_computation_reads():
+    e3 = ESC | {"code": "E3", "options": ["preparer_enters_amount", "close_session"], "evidence": ["doc:1099r_1"]}
+    e8 = ESC | {"code": "E8", "options": ["enter_value", "contact_client"], "evidence": ["doc:w2_1.box.2"]}
+    assert suggested_path(e3) == "user_inputs.1099r_1.2a"
+    assert suggested_path(e8) == "user_inputs.w2_1.2"
+    payload = build_payload(e3, "preparer_enters_amount", "Simplified Method by preparer", "staff_jlee",
+                            suggested_path(e3), parse_value(suggested_path(e3), "4,000"))
+    assert payload["overrides"] == {"user_inputs.1099r_1.2a": 4000}
+
+
 def test_E2_override_paths_limited_to_runtime_prefixes():
     esc = ESC | {"code": "E2", "options": ["choose_value"], "evidence": ["intake.taxpayer.stated_age@1a2b"]}
     assert suggested_path(esc) == "intake.taxpayer.stated_age"

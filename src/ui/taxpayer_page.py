@@ -15,9 +15,11 @@ from __future__ import annotations
 import html
 import secrets
 from copy import deepcopy
+from pathlib import Path
 
 import streamlit as st
 
+from src.agents import intake as intake_agent
 from src.agents.intake import QUESTIONS, field_path
 from src.dashboard.app import db_path
 from src.dashboard.resolution import taxpayer_message
@@ -27,6 +29,8 @@ from src.memory import open_sessions
 from src.ui.answers import screen
 
 CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"  # no 0/O or 1/I/L to misread
+UPLOAD_TYPES = ["jpg", "jpeg", "png", "pdf"]  # what P4's W-2 extraction reads
+UPLOAD_DIR = Path(__file__).resolve().parents[2] / "runtime" / "uploads"  # ignored by git
 NOT_SURE = "I'm not sure"
 STYLE = """<style>
 .stMainBlockContainer{max-width:820px}
@@ -41,12 +45,26 @@ STYLE = """<style>
 DONE_TEXT = ("Thank you. You’ve answered everything we need for now. A Kushim preparer will check "
              "your draft return and contact you. SilverFile never files a return for you.")
 CLOSED_TEXT = "Thank you. One of our specialists will contact you to finish your return."
-PLAIN_LABELS = {"intake.filing_status": "Your situation", "intake.taxpayer.birth_date": "Date of birth",
-                "intake.taxpayer.blind": "Blind", "intake.dual_status_alien": "Nonresident for part of 2025",
-                "intake.can_be_claimed_as_dependent": "Someone can list you as a dependent"}
 PLAIN_VALUES = {"single": "Single", "mfj": "Married, filing together", "mfs": "Married, filing separately",
                 "hoh": "Head of household", "qss": "Widowed (qualifying surviving spouse)",
+                "direct_deposit": "Direct deposit", "check": "Mailed check", "taxpayer": "Your own",
+                "joint": "Joint", "spouse": "Your spouse's", "other": "Someone else's", "unknown": "Not sure",
                 True: "Yes", False: "No"}
+
+
+def plain_label(question: dict) -> str:
+    """Intake's own wording for a question (intake.LABELS), else the field name."""
+    label = getattr(intake_agent, "LABELS", {}).get(field_path(question))
+    label = label or question["field"].replace("_", " ")
+    return label[:1].upper() + label[1:]
+
+
+def plain_value(path: str, value) -> str:
+    if path.endswith(".ssn"):
+        return f"XXX-XX-{str(value)[-4:]}"  # R17: never show a full SSN back
+    if isinstance(value, (bool, str)) and value in PLAIN_VALUES:
+        return PLAIN_VALUES[value]
+    return str(value)
 
 
 def new_code() -> str:
@@ -58,14 +76,31 @@ def normalise_code(text: str) -> str:
     return "-".join(part for part in (text or "").upper().replace(" ", "-").split("-") if part)
 
 
-def starter_inputs() -> dict:
-    """Synthetic household documents for the demo, with every answer Intake asks removed.
+def save_uploads(code: str, files, folder: Path = UPLOAD_DIR) -> list[dict]:
+    """W-2 files chosen on the start screen, saved for this session, as Extraction uploads."""
+    uploads = []
+    for file in files or []:
+        suffix = Path(file.name).suffix.lower()
+        if suffix.lstrip(".") not in UPLOAD_TYPES:
+            continue
+        doc_id = f"w2_{len(uploads) + 1}"
+        target = folder / code / f"{doc_id}{suffix}"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(file.getvalue())
+        uploads.append({"doc_id": doc_id, "form": "W-2", "source_file": str(target)})
+    return uploads
 
-    Uploads can only be attached when a session starts. Until P4's W-2 upload lands, the page
-    starts from P1's synthetic sample and lets Intake ask its own questions. New questions in
-    intake.QUESTIONS are removed automatically.
+
+def starter_inputs(uploads: list[dict] | None = None) -> dict:
+    """The household's documents, with every answer Intake asks removed.
+
+    Uploads can only be attached when a session starts. W-2 files the taxpayer uploads are read
+    by P4's extraction; without any, the page starts from P1's synthetic sample documents. New
+    questions in intake.QUESTIONS are removed automatically.
     """
     inputs = deepcopy(sample())
+    if uploads:
+        inputs["uploads"] = uploads
     for question in QUESTIONS:
         parts = field_path(question).split(".")[1:]
         cursor = inputs["intake"]
@@ -99,8 +134,7 @@ def covered(intake: dict) -> list[tuple[str, str]]:
         path = field_path(question)
         value = _value(intake, path)
         if value not in (None, ""):
-            label = PLAIN_LABELS.get(path, question["field"].replace("_", " ").capitalize())
-            rows.append((label, PLAIN_VALUES.get(value, str(value))))
+            rows.append((plain_label(question), plain_value(path, value)))
     return rows
 
 
@@ -120,11 +154,14 @@ def send_answer(thread_id: str, mode: str, text: str) -> None:
 def start_screen() -> None:
     st.markdown("We’ll ask you a few questions about your 2025 tax return, **one at a time**. "
                 "There are no wrong answers, and you can say “I’m not sure” at any point.")
+    files = st.file_uploader("Your W-2 forms, if you have them: a photo or PDF of each one", type=UPLOAD_TYPES,
+                             accept_multiple_files=True,
+                             help="Practice system: use only the sample W-2s, never a real one.")
     if st.button("Start a new return", type="primary", icon=":material/play_arrow:"):
         code, mode = new_code(), session_mode()
-        with st.spinner("Getting your first question…"):
+        with st.spinner("Reading your documents and getting your first question…"):
             with open_sessions(db_path(), agents_for(mode)) as sessions:
-                sessions.start(code, starter_inputs(), mode=mode)
+                sessions.start(code, starter_inputs(save_uploads(code, files)), mode=mode)
         st.session_state.update(sf_thread=code, sf_transcript=[], sf_new=True)
         st.rerun()
     st.divider()
@@ -165,6 +202,8 @@ def conversation(thread_id: str) -> None:
 
     if pause and pause.get("type") == "intake":
         question = pause.get("question") or "Please answer the next question."
+        if pause.get("summary"):
+            st.caption(pause["summary"])
         st.html(f'<div class="sf-question" role="status" aria-live="polite">{html.escape(question)}</div>')
         with st.form("answer", clear_on_submit=True, border=False):
             text = st.text_area("Your answer", height=110, key="sf_answer")

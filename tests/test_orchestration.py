@@ -19,6 +19,15 @@ def test_R10_missing_input_routes_back_to_intake():
     assert result["next_agent"] == "intake"
 
 
+def test_B1_uploads_are_extracted_before_computation_after_an_early_flag():
+    # Intake -> Rules (flag) -> human -> Rules happened before any extraction.
+    state = {"last_agent": "rules", "scope": {"in_scope": True}, "filing_status_validated": "single",
+             "eligibility": {"missing": []}, "uploads": [{"doc_id": "w2_1"}], "documents": []}
+    assert orchestrate(state)["next_agent"] == "dispatch"
+    state["documents"] = [{"doc_id": "w2_1", "form": "W-2", "boxes": {"1": 31250}}]
+    assert orchestrate(state)["next_agent"] == "computation"
+
+
 def test_E4_gate_interrupts_as_well_as_stop():
     result = orchestrate({"escalations": [{"id": "esc_0001", "kind": "GATE", "status": "open"}]})
     assert result["next_agent"] == "human"

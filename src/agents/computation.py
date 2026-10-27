@@ -128,19 +128,25 @@ def _truthy(value: Any) -> bool:
 def _read_box(document: dict, box: str, required: bool, user_inputs: dict, missing: list):
     """Return (amount, source) for one box, or None. Adds to `missing` when it cannot be used.
 
-    A box listed in the document's `unverified` list (low OCR confidence) is not used until the
-    taxpayer confirms it: a confirmed value in user_inputs["<doc_id>.<box>"] replaces it.
+    A value in user_inputs["<doc_id>.<box>"] (taxpayer confirmation or staff resolution) replaces
+    the printed box. Without one, a box in the document's `unverified` list (low OCR confidence)
+    is not used, and neither is 1099-R box 2a when box 2b "taxable amount not determined" is
+    checked: a preparer must enter that amount (E3).
     """
     doc_id = document["doc_id"]
     path = f"documents.{doc_id}.boxes.{box}"
-    raw = (document.get("boxes") or {}).get(box)
+    boxes = document.get("boxes") or {}
+    raw = boxes.get(box)
     confirmed = False
-    if box in (document.get("unverified") or []):
-        override = user_inputs.get(f"{doc_id}.{box}")
-        if override is None:
-            missing.append(f"{path}: low-confidence value needs the taxpayer to confirm it")
-            return None
+    override = user_inputs.get(f"{doc_id}.{box}")
+    if override is not None:
         raw, confirmed = _scalar(override), True
+    elif box in (document.get("unverified") or []):
+        missing.append(f"{path}: low-confidence value needs the taxpayer to confirm it")
+        return None
+    elif box == "2a" and _form(document) == "1099-R" and _truthy(boxes.get("2b_not_determined")):
+        missing.append(f"{path}: taxable amount not determined; a preparer must enter it (E3)")
+        return None
     if raw is None or raw == "":
         if required:
             missing.append(f"{path}: required box is blank")
@@ -155,7 +161,10 @@ def _read_box(document: dict, box: str, required: bool, user_inputs: dict, missi
         return None
     source = {"doc_id": doc_id, "form": document["form"], "box": box, "value": float(amount) if amount % 1 else int(amount)}
     if confirmed:
-        source["confirmed_by"] = "user_input"
+        kind = override.get("kind") if isinstance(override, dict) else None
+        source["confirmed_by"] = "staff (human_resolution)" if kind == "human_resolution" else "user_input"
+        if isinstance(override, dict) and override.get("entered_by"):
+            source["entered_by"] = override["entered_by"]
     return amount, source
 
 
@@ -218,7 +227,8 @@ def _direct_input(line: str, user_inputs: dict, now: str, missing: list, *, opti
     if amount < 0 and line not in MAY_BE_NEGATIVE:
         missing.append(f"user_inputs.{line}: amount cannot be negative")
         return None
-    value = int(amount.quantize(1, rounding="ROUND_HALF_UP"))
+    # Kept unrounded here; _compute rounds cents through the sum_amounts tool (A23, R9).
+    value = int(amount) if amount == amount.to_integral_value() else float(amount)
     if isinstance(raw, dict):  # Intake or staff supplied a full provenance record: keep its audit fields
         record = {key: raw[key] for key in ("kind", "formula", "inputs", "sources", "tool", "citation",
                                             "entered_by", "timestamp") if key in raw}
@@ -230,8 +240,10 @@ def _direct_input(line: str, user_inputs: dict, now: str, missing: list, *, opti
         for key, default in (("formula", None), ("inputs", []), ("sources", [{"user_inputs": line}]), ("tool", None)):
             record.setdefault(key, default)
         return record
-    return _record(line, value, "user_input", now, sources=[{"user_inputs": line}],
-                   entered_by="taxpayer (intake)", citation=CITE_SCHEDULES)
+    record = _record(line, 0, "user_input", now, sources=[{"user_inputs": line}],
+                     entered_by="taxpayer (intake)", citation=CITE_SCHEDULES)
+    record["value"] = value
+    return record
 
 
 def _record(line: str, value: int, kind: str, now: str, *, formula=None, inputs=None, sources=None,
@@ -275,6 +287,13 @@ async def _compute(state: dict, call, now: str) -> tuple[dict, list]:
     payment_parts = {line: _direct_input(line, user_inputs, now, missing, optional=True) for line in PAYMENT_COMPONENTS}
     if missing:
         return {}, missing
+
+    # A23: a direct input with cents is rounded by the sum_amounts tool, not here (R9).
+    for record in [*direct.values(), *wages_extra.values(), direct_21, direct_32, *payment_parts.values()]:
+        if record and isinstance(record["value"], float):
+            result = await call("sum_amounts", items=[{"label": f"line {record['line']} as entered",
+                                                       "value": record["value"]}])
+            record.update(value=result["value"], formula=result["formula"], tool=result["tool"])
 
     lines: dict[str, dict] = {}
 
@@ -332,7 +351,7 @@ async def _compute(state: dict, call, now: str) -> tuple[dict, list]:
     put(direct["10"])
 
     # 2. Line 6b needs every other income line and the adjustments (line 10)
-    other_income = sum(lines[n]["value"] for n in ("1z", "2b", "3b", "4b", "5b", "7", "8"))
+    other_income = (await call("sum_amounts", items=total_of("1z", "2b", "3b", "4b", "5b", "7", "8")))["value"]
     if lines["6a"]["value"] == 0:
         put(_record("6b", 0, "default_zero", now, formula="no Social Security benefits",
                     citation=CITE_SOCIAL_SECURITY))

@@ -1,0 +1,14 @@
+{
+  "intake": {
+    "filing_status": "single",
+    "taxpayer": {"birth_date": "1958-03-05", "ssn": "902-34-5678", "blind": false},
+    "dual_status_alien": false,
+    "can_be_claimed_as_dependent": false,
+    "document_inventory": ["W-2"],
+    "refund": {"method": "direct_deposit", "account_owner": "unknown"}
+  },
+  "uploads": [
+    {"doc_id": "w2_1", "form": "W-2", "source_file": "demo/w2_image_2.jpg"}
+  ],
+  "user_inputs": {}
+}
