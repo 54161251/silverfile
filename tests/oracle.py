@@ -53,5 +53,5 @@ def senior(status, agi, qualifiers):
     if status == "mfs":
         return 0
     threshold = 150000 if status == "mfj" else 75000
-    per_person = max(F(0), 6000 - F("0.06") * max(0, agi - threshold))
-    return half_up(per_person * qualifiers)
+    line_34 = half_up(F("0.06") * max(0, agi - threshold))   # Schedule 1-A line 34, a rounded line (A23)
+    return max(0, 6000 - line_34) * qualifiers

@@ -33,7 +33,7 @@ document + direct lines -> 6b (needs every other income line and line 10) -> 9 -
 
 ## 2025 parameters (verified against two independent sources; re-check against the IRS instructions before demo)
 - Standard deduction: 15,750 single/MFS; 31,500 MFJ/QSS; 23,625 HOH. Add 2,000 per 12d box if single or HOH, else 1,600.
-- Senior deduction (Schedule 1-A): 6,000 per qualifying person, minus 6% of AGI over 75,000 (150,000 MFJ), per person, floor 0.
+- Senior deduction (Schedule 1-A): 6,000 per qualifying person, minus 6% of AGI over 75,000 (150,000 MFJ), per person, floor 0. The 6% reduction (line 34) is rounded to whole dollars first, as the form does line by line (A23).
 - Brackets: Rev. Proc. 2024-40 (QSS uses the joint schedule).
 - Social Security: base 25,000/32,000 (MFJ), widths 9,000/12,000, 85% cap.
 
@@ -44,7 +44,7 @@ document + direct lines -> 6b (needs every other income line and line 10) -> 9 -
 | Intake (P3) | `intake.taxpayer.blind`, `intake.spouse.blind`, `intake.mfs_lived_with_spouse` | |
 | Intake (P3) | `user_inputs[line]` for 8, 10, 17, 19, 20, 23, 25c, 26, 21*, 32*, 27-31*, 1b-1h* (* optional) | number, or a full provenance record (audit fields kept) |
 | Extraction (P4) | `documents[].boxes` | W-2: 1, 2. 1099-INT: 1, 3, 4, 8. 1099-DIV: 1a, 1b, 4. 1099-R: 1, 2a, 4, `ira_sep_simple`, `qcd_amount`. SSA-1099: 5, 6 |
-| Intake/Extraction | `user_inputs["<doc_id>.<box>"]` | Taxpayer-confirmed value for a box in the document's `unverified` list. Unconfirmed unverified boxes block |
+| Intake/Extraction/Staff | `user_inputs["<doc_id>.<box>"]` | Replaces the printed box whenever present (taxpayer confirmation or staff resolution); the source records who entered it. An `unverified` box with no entry blocks. 1099-R box 2a is also blocked while `2b_not_determined` is set and no amount was entered (E3) |
 
 Absent direct lines default to 0 with `kind="default_zero"` (visible on the dashboard). To force Intake to ask instead,
 set `REQUIRED_DIRECT_LINES = ("10", "26")` at the top of `computation.py`.
@@ -61,10 +61,12 @@ set `REQUIRED_DIRECT_LINES = ("10", "26")` at the top of `computation.py`.
 - Lines 7 and 13a are always 0 (out of scope, A18). Dividend capital-gain distributions must be escalated by Rules.
 - MFS who lived with spouse: tool refuses (A17); surfaces as an open question rather than an escalation. Rules should catch it first.
 - Non-IRA 1099-R is assumed to be a pension/annuity (line 5). IRA flag drives line 4.
-- Senior deduction uses AGI as MAGI.
+- Senior deduction uses AGI as MAGI (exact unless Puerto Rico or foreign-income exclusions exist, which are out of scope).
+- Extraction reads W-2 images only. 1099 and SSA-1099 values, and the 1099-R keys `ira_sep_simple` and `qcd_amount`, are supported through structured input and the goldens, not through OCR.
 
 ## Verification status
-- 63 unit tests (`unittest`, pytest-compatible). Golden numbers were derived by AI and cross-checked against `tests/oracle.py`, an independent reimplementation. **They have not been verified by a human in a spreadsheet. Do that (R12) before relying on them.**
+- Unit tests (`unittest`, pytest-compatible). Golden numbers were derived by AI and cross-checked against `tests/oracle.py`, an independent reimplementation.
+- R12 (Oct 27): Claude (AI, not a human re-derivation) checked the parameters against Rev. Proc. 2024-40, Rev. Proc. 2025-32, Schedule 1-A and Pub. 915, recomputed g01, g02, g05 line 6b and g03 line 13b from the worksheet lines, and recomputed g01-g06 in an Excel workbook with 0 differences. See docs/ai_log/jad.md.
 - Mutation checks: changing a bracket rate fails 59 tests; dropping line 8 from the SS inputs fails the schedule-1 tests.
 - Not yet tested against the real `src/state.py` (a reconstruction was used), real Rules output, or a live LangGraph run.
 
