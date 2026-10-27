@@ -97,9 +97,17 @@ def test_D5_alternating_old_answers_cannot_reset_guard_forever():
 def test_E8_new_uncertainty_flag_checks_rules_before_next_question(tmp_path):
     with open_sessions(tmp_path / "session.db", adapters()) as sessions:
         sessions.start("uncertain", {"intake": {}}, mode="demo")
-        result = sessions.resume("uncertain", {"answer": "widowed"})
+        result = sessions.resume("uncertain", {"answer": "it's complicated"})
         assert result["status"] == "awaiting_human"
         assert result["escalations"][-1]["code"] == "E8"
+
+
+def test_E5_widowed_answer_goes_to_staff_as_filing_status_ambiguity(tmp_path):
+    with open_sessions(tmp_path / "session.db", adapters()) as sessions:
+        sessions.start("widowed", {"intake": {}}, mode="demo")
+        result = sessions.resume("widowed", {"answer": "widowed"})
+        assert result["status"] == "awaiting_human"
+        assert [e["code"] for e in result["escalations"]] == ["E5"]
 
 
 def test_P3_question_queue_without_progress_routes_to_intake():
