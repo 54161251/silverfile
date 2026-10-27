@@ -52,3 +52,18 @@ I compared the refunds with the hand calculations in the eval write-ups. Claude 
 that would not install on Python 3.11. I have no programming background, so I relied on Claude to explain
 each step; the code is AI-written, and my part was the checklist, the corrections, running everything and
 confirming the results.
+
+## October 27, 2026 — Traces and grader simulation update
+
+Tool: Claude Opus 5.5, same setup.
+
+Claude wrote `traces/make_traces.py` and generated `traces/eval_case_1.json` and `traces/eval_case_2.json`
+from current main. The script masks personal details with P4's `mask_data`, leaves out raw intake answers
+and refuses to write a file that still contains an unmasked SSN. Claude also checked the files for SSNs,
+birth dates and account details. eval_case_1 ended `draft_ready` with refund 2,650 and eval_case_2 paused
+at E6, resumed and ended `draft_ready` with refund 1,995.
+
+Claude reran my made-up MFJ case. The low-confidence W-2 box that looped to E10 on Oct 26 now raises E8;
+resolving it with the confirmed wages finished the return with the same 1,741 refund and review passing.
+Claude updated docs/P6_GRADER_SIM.md and docs/P6_REPORT_SECTION.md to match. I read the changes,
+committed them and opened the PR.
