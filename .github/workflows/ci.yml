@@ -32,10 +32,9 @@ jobs:
       - name: Run tests
         run: python -m pytest -q
 
-      # g02-g04 join this list once their 1099-R fixtures carry box 7 (see docs/P6_REVIEW.md)
       - name: Compute and review clean golden returns
         run: |
-          for golden in tests/golden/g01_*.json tests/golden/g05_*.json tests/golden/g06_*.json; do
+          for golden in tests/golden/g0[1-6]_*.json; do
             echo "== $golden"
             python -m src.agents.review "$golden"
           done
