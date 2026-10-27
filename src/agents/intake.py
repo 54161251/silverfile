@@ -33,13 +33,20 @@ def parse_filing_status(answer: str) -> str | None:
         found.add("mfs" if words & {"separately", "separate"} else "mfj")
     return found.pop() if len(found) == 1 else None
 
-MARITAL_STAFF_WORDS = {"widow", "widowed", "widower", "divorced", "separated",
-                       "died", "passed", "deceased", "death"}
+MARITAL_STAFF_WORDS = {"widow", "widowed", "widower", "divorced", "separated"}
+DEATH_WORDS = {"died", "passed", "deceased", "death"}
+SPOUSE_WORDS = {"spouse", "husband", "wife"}
 
 
 def needs_filing_status_help(answer: str) -> bool:
-    """Widowed, divorced or separated: a colleague settles the filing status (E5), not us."""
-    return bool(set(re.findall(r"[a-z]+", answer.lower())) & MARITAL_STAFF_WORDS)
+    """Widowed, divorced or separated: a colleague settles the filing status (E5), not us.
+
+    Death words count only when the answer also mentions a spouse, husband or wife.
+    """
+    words = set(re.findall(r"[a-z]+", answer.lower()))
+    if words & MARITAL_STAFF_WORDS:
+        return True
+    return bool(words & DEATH_WORDS and words & SPOUSE_WORDS)
 
 def parse_birth_date(answer: str) -> str | None:
     """Turn a date like 03/05/1958, 1958-03-05 or March 5, 1958 into YYYY-MM-DD, or None."""
@@ -226,7 +233,8 @@ QUESTIONS = [
         "field": "dual_status_alien",
         "text": "Were you a nonresident of the United States for part of 2025? "
                 "This mainly applies to people who moved to or from the "
-                "United States during the year. Please answer yes or no.",
+                "United States, or whose immigration status changed, during "
+                "the year. Please answer yes or no.",
         "parser": parse_yes_no,
     },
     {

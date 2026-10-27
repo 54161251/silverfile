@@ -418,3 +418,11 @@ def test_birth_date_accepts_common_ways_of_writing():
         assert parse_birth_date(text) == "1958-03-05", text
     for text in ["", "sometime in March", "3/5/58", "31/12/1958"]:
         assert parse_birth_date(text) is None, text
+
+def test_death_words_only_count_with_a_spouse_word():
+    from src.agents.intake import needs_filing_status_help
+    assert needs_filing_status_help("my husband passed away")
+    assert needs_filing_status_help("I am a widow")
+    assert needs_filing_status_help("divorced")
+    assert not needs_filing_status_help("I'm single, my mother passed away last year")
+    assert not needs_filing_status_help("single")
