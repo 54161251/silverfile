@@ -12,3 +12,4 @@ pillow==12.3.0
 pytesseract==0.3.13
 pypdfium2==5.13.0
 numpy==2.4.4  # 2.5 needs Python 3.12; team target is 3.11
+anthropic==2.3.0  # P3: Intake document briefing, the model call measured by the spec 4.5 batch (R5, R6)
