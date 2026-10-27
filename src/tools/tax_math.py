@@ -245,7 +245,8 @@ def senior_deduction(filing_status: str, agi: float, qualifier_count: int) -> di
 
     Each qualifying person (decided by the Rules agent: age 65+, valid SSN) starts at
     6,000. Each person's amount is reduced by 6% of the AGI above 75,000 (150,000 if MFJ),
-    never below 0. MFS always gets 0 (C12). MAGI is taken to be AGI (line 11a). The line total is rounded once.
+    never below 0. The 6% reduction (Schedule 1-A line 34) is rounded to whole dollars first, as the form
+    does line by line (A23), then subtracted from 6,000. MFS always gets 0 (C12). MAGI is taken to be AGI (line 11a).
     This is separate from, and in addition to, the additional standard deduction on line 12e.
     """
     status = _status(filing_status)
@@ -257,16 +258,16 @@ def senior_deduction(filing_status: str, agi: float, qualifier_count: int) -> di
                         _entry("qualifying people (ignored for MFS)", people)], CITE_SENIOR_DEDUCTION)
     threshold = SENIOR_THRESHOLD.get(status, SENIOR_THRESHOLD_DEFAULT)
     excess = max(Decimal(0), income - threshold)
-    each = max(Decimal(0), SENIOR_AMOUNT - SENIOR_PHASEOUT_RATE * excess)
+    line_34 = round_half_up(SENIOR_PHASEOUT_RATE * excess)      # Schedule 1-A line 34, rounded as a line (A23)
+    each = max(0, int(SENIOR_AMOUNT) - line_34)                  # line 35, entered on 36a and on 36b if MFJ
     total = each * people
     inputs = [_entry("filing status", status), _entry("AGI (line 11a, used as MAGI)", income, "11a"),
               _entry("qualifying people", people)]
     if people == 0:
         return _result("senior_deduction", 0, "no qualifying person: 0", inputs, CITE_SENIOR_DEDUCTION)
-    formula = (f"{people} * max(0, {_plain(SENIOR_AMOUNT)} - {_plain(SENIOR_PHASEOUT_RATE)} * "
-               f"max(0, {_term(income)} - {_plain(threshold)}))")
-    return _result("senior_deduction", round_half_up(total), formula, inputs, CITE_SENIOR_DEDUCTION,
-                   unrounded=total)
+    formula = (f"{people} * max(0, {_plain(SENIOR_AMOUNT)} - {line_34}); {line_34} is line 34: "
+               f"{_plain(SENIOR_PHASEOUT_RATE)} * max(0, {_term(income)} - {_plain(threshold)}) rounded half up")
+    return _result("senior_deduction", total, formula, inputs, CITE_SENIOR_DEDUCTION)
 
 
 def income_tax(filing_status: str, taxable_income: float) -> dict[str, Any]:

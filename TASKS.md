@@ -26,7 +26,7 @@ are implemented. The offline skeleton is runnable. Full integration, Python 3.11
 Docker verification, branch protection and supplied-course-file discovery remain pending.
 See docs/IMPLEMENTATION_NOTES.md; unchecked application milestones below remain incomplete.
 
-P2 update (Oct 23): tax_math functions, the silverfile-tax-math MCP server, the Computation agent (all 41 lines with provenance), seven golden returns and their tests are implemented (src/tools/, src/agents/computation.py, tests/). Interface and open agreements with P3, P4 and P5 are in docs/P2_COMPUTATION.md. Still open for P2: re-derive the goldens in a spreadsheet (R12), report paragraph (R21), and compile the final AI disclosure from the individual logs (R19).
+P2 update (Oct 23): tax_math functions, the silverfile-tax-math MCP server, the Computation agent (all 41 lines with provenance), seven golden returns and their tests are implemented (src/tools/, src/agents/computation.py, tests/). Interface and open agreements with P3, P4 and P5 are in docs/P2_COMPUTATION.md. Oct 27: goldens g02-g04 now carry 1099-R code 7 and run in CI; parameters and goldens checked against IRS sources by Claude (AI, see docs/ai_log/jad.md; no human re-derivation); senior-deduction rounding follows Schedule 1-A line 34. Still open for P2: report paragraph (R21) and the final report and AI disclosure (R19).
 
 P7 update (Oct 24): Streamlit staff dashboard (`streamlit run streamlit_app.py`): returns list, HITL
 queue, return detail, sign-in, and resolve buttons wired to `Sessions.resume`. Draft 1040-SR as HTML with
