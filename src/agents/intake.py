@@ -6,11 +6,16 @@ from src.agents.rules import ESCALATION_CATALOG
 
 FILING_STATUS_CHOICES = {
     "single": "single",
-    "married": "mfj",
     "married filing jointly": "mfj",
     "married filing separately": "mfs",
     "head of household": "hoh",
 }
+
+
+JOINT_WORDS = {"jointly", "joint", "together"}
+SEPARATE_WORDS = {"separately", "separate"}
+BLOCKING_WORDS = {"widow", "widowed", "widower", "not", "never",
+                  "unmarried", "divorced", "separated"}
 
 
 def parse_filing_status(answer: str) -> str | None:
@@ -21,25 +26,59 @@ def parse_filing_status(answer: str) -> str | None:
         return exact
     words = set(re.findall(r"[a-z]+", text))
     # Unclear, negated, or human-path cases: do not guess.
-    if words & {"widow", "widowed", "widower", "not", "never",
-                "unmarried", "divorced", "separated"}:
+    if words & BLOCKING_WORDS:
         return None
+    joint = bool(words & JOINT_WORDS)
+    separate = bool(words & SEPARATE_WORDS)
     found = set()
     if "single" in words:
         found.add("single")
     if "head" in words and "household" in words:
         found.add("hoh")
     if "married" in words:
-        found.add("mfs" if words & {"separately", "separate"} else "mfj")
-    return found.pop() if len(found) == 1 else None
+        if separate and not joint:
+            found.add("mfs")
+        elif joint and not separate:
+            found.add("mfj")
+        else:
+            found.add("married?")  # married, but joint or separate is not clear
+    result = found.pop() if len(found) == 1 else None
+    return None if result == "married?" else result
 
-MARITAL_STAFF_WORDS = {"widow", "widowed", "widower", "divorced", "separated",
-                       "died", "passed", "deceased", "death"}
 
+def is_married_unspecified(answer: str) -> bool:
+    """'I am married' with no word about filing together or separately: ask a follow-up."""
+    words = set(re.findall(r"[a-z]+", answer.lower()))
+    return ("married" in words and "single" not in words
+            and not words & BLOCKING_WORDS
+            and parse_filing_status(answer) is None)
+
+
+def parse_joint_or_separate(answer: str) -> str | None:
+    """Answer to 'together or separately?': mfj, mfs, or None if unclear."""
+    words = set(re.findall(r"[a-z]+", answer.lower()))
+    joint = bool(words & JOINT_WORDS)
+    separate = bool(words & SEPARATE_WORDS)
+    if joint and not separate:
+        return "mfj"
+    if separate and not joint:
+        return "mfs"
+    return None
+
+MARITAL_STAFF_WORDS = {"widow", "widowed", "widower", "divorced", "separated"}
+DEATH_WORDS = {"died", "passed", "deceased", "death"}
+SPOUSE_WORDS = {"spouse", "husband", "wife"}
+MARRIED_FOLLOWUP = "Will you file together with your spouse, or separately?"
 
 def needs_filing_status_help(answer: str) -> bool:
-    """Widowed, divorced or separated: a colleague settles the filing status (E5), not us."""
-    return bool(set(re.findall(r"[a-z]+", answer.lower())) & MARITAL_STAFF_WORDS)
+    """Widowed, divorced or separated: a colleague settles the filing status (E5), not us.
+
+    Death words count only when the answer also mentions a spouse, husband or wife.
+    """
+    words = set(re.findall(r"[a-z]+", answer.lower()))
+    if words & MARITAL_STAFF_WORDS:
+        return True
+    return bool(words & DEATH_WORDS and words & SPOUSE_WORDS)
 
 def parse_birth_date(answer: str) -> str | None:
     """Turn a date like 03/05/1958, 1958-03-05 or March 5, 1958 into YYYY-MM-DD, or None."""
@@ -226,7 +265,8 @@ QUESTIONS = [
         "field": "dual_status_alien",
         "text": "Were you a nonresident of the United States for part of 2025? "
                 "This mainly applies to people who moved to or from the "
-                "United States during the year. Please answer yes or no.",
+                "United States, or whose immigration status changed, during "
+                "the year. Please answer yes or no.",
         "parser": parse_yes_no,
     },
     {
@@ -452,6 +492,20 @@ def handle_answer(state: dict, answer: str, turn_id: int, question: dict | None 
         intake = record_answer(intake, "marital_status_unclear", True)
         return {"intake": intake, "flags": flags}
 
+    if question["field"] == "filing_status":
+        if intake.get("married_pending"):
+            value = parse_joint_or_separate(answer)
+            if value is None:
+                flags.append(make_flag("uncertain_answer", turn_id, answer))
+            else:
+                intake = {k: v for k, v in intake.items() if k != "married_pending"}
+                intake = record_answer(intake, "filing_status", value)
+            return {"intake": intake, "flags": flags}
+        if is_married_unspecified(answer):
+            intake = {k: v for k, v in intake.items() if k != "filing_status"}
+            intake = record_answer(intake, "married_pending", True)
+            return {"intake": intake, "flags": flags}
+
     value = question["parser"](answer)
     if value is None:
         flags.append(make_flag("uncertain_answer", turn_id, answer))
@@ -500,9 +554,12 @@ def run_interactive(state: dict) -> dict:
             return {"intake": intake, "flags": flags, "open_questions": [],
                     "session_summary": build_summary(intake)}
 
+        text = question["text"]
+        if question["field"] == "filing_status" and intake.get("married_pending"):
+            text = MARRIED_FOLLOWUP
         reply = interrupt({
             "type": "intake",
-            "question": (notice + " " if notice else "") + question["text"],
+            "question": (notice + " " if notice else "") + text,
             "fields": [field_path(question)],
         })
 
