@@ -61,14 +61,26 @@ def override_kind(code: str, option: str) -> str | None:
     return NEEDS_OVERRIDE.get((code, option))
 
 
+DOC_BOX = re.compile(r"^doc:(?P<doc>[0-9a-z_]+)\.box\.(?P<box>[0-9a-z_]+)$")
+
+
 def suggested_path(escalation: dict) -> str:
-    """First evidence entry that names a state path, without P5's '@hash' suffix."""
+    """First evidence entry that names a state path, without P5's '@hash' suffix.
+
+    Document escalations name a document, not a state path. Computation reads a staff value
+    for one box from user_inputs.<doc_id>.<box>, so suggest that: the box Rules named (E8),
+    or 1099-R box 2a, the taxable amount (E3).
+    """
     if escalation.get("code") == "E5":
         return "intake.filing_status"
     for item in escalation.get("evidence", []):
         path = str(item).split("@", 1)[0]
         if path.startswith(ALLOWED_PREFIXES):
             return path
+        if match := DOC_BOX.match(path):
+            return f"user_inputs.{match['doc']}.{match['box']}"
+        if escalation.get("code") == "E3" and path.startswith("doc:"):
+            return f"user_inputs.{path[4:]}.2a"
     return ""
 
 

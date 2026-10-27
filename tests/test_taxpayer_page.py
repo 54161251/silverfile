@@ -5,7 +5,7 @@ import pytest
 
 from src.agents.intake import QUESTIONS, field_path
 from src.ui.answers import SSN_MARKER, screen
-from src.ui.taxpayer_page import covered, normalise_code, starter_inputs
+from src.ui.taxpayer_page import covered, normalise_code, save_uploads, starter_inputs
 
 pytest.importorskip("streamlit")
 from streamlit.testing.v1 import AppTest  # noqa: E402
@@ -37,6 +37,19 @@ def test_R17_volunteered_ssn_is_removed_before_sending():
 def test_empty_and_overlong_answers_are_refused():
     assert screen("   ", []).send is None
     assert screen("x" * 501, []).send is None
+
+
+def test_B3_uploaded_w2_files_become_the_session_uploads(tmp_path):
+    from types import SimpleNamespace
+    picture = Path(__file__).resolve().parents[1] / "demo" / "w2_image_1.jpg"
+    files = [SimpleNamespace(name="My W2.JPG", getvalue=picture.read_bytes),
+             SimpleNamespace(name="notes.txt", getvalue=lambda: b"not a W-2")]
+    uploads = save_uploads("SF-TEST-0001", files, folder=tmp_path)
+    assert [u["doc_id"] for u in uploads] == ["w2_1"]
+    saved = Path(uploads[0]["source_file"])
+    assert saved.parent == tmp_path / "SF-TEST-0001" and saved.read_bytes() == picture.read_bytes()
+    assert starter_inputs(uploads)["uploads"] == uploads
+    assert starter_inputs([])["uploads"] == starter_inputs()["uploads"]  # no upload: sample documents
 
 
 def test_starter_inputs_leave_every_intake_question_unanswered():
