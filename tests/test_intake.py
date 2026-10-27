@@ -20,8 +20,7 @@ from src.agents.intake import (
 
 
 def test_filing_status_married_maps_to_mfj():
-    assert parse_filing_status("Married") == "mfj"
-
+    assert parse_filing_status("Married filing jointly") == "mfj"
 
 def test_widowed_is_not_guessed():
     assert parse_filing_status("widowed") is None
@@ -340,7 +339,7 @@ def test_go_back_reasks_previous_question_and_keeps_answers():
     payload = second["__interrupt__"][0].value
     assert payload["fields"] == ["intake.filing_status"]
     assert "Of course" in payload["question"]
-    final = graph.invoke(Command(resume={"answer": "married"}), config)
+    final = graph.invoke(Command(resume={"answer": "married filing jointly"}), config)
     assert final["intake"]["filing_status"] == "mfj"
 
 def test_rules_named_dependent_path_is_asked_and_saved():
@@ -371,7 +370,7 @@ def test_dependent_fields_are_asked_in_order():
     assert next_question(intake, missing)["field"] == "filing_status"
 
 def test_filing_status_understands_sentences_but_does_not_guess():
-    assert parse_filing_status("I am married") == "mfj"
+    assert parse_filing_status("we are married and file jointly") == "mfj"
     assert parse_filing_status("Actually, I'm single.") == "single"
     assert parse_filing_status("married, filing separately") == "mfs"
     assert parse_filing_status("I am the head of household") == "hoh"
@@ -426,3 +425,45 @@ def test_death_words_only_count_with_a_spouse_word():
     assert needs_filing_status_help("divorced")
     assert not needs_filing_status_help("I'm single, my mother passed away last year")
     assert not needs_filing_status_help("single")
+
+def test_married_alone_needs_a_follow_up():
+    from src.agents.intake import is_married_unspecified, parse_joint_or_separate
+    assert parse_filing_status("married") is None
+    assert parse_filing_status("I am married") is None
+    assert is_married_unspecified("married")
+    assert is_married_unspecified("I am married")
+    assert parse_filing_status("married filing jointly") == "mfj"
+    assert parse_filing_status("we are married and file jointly") == "mfj"
+    assert parse_filing_status("married, filing separately") == "mfs"
+    assert not is_married_unspecified("married filing jointly")
+    assert not is_married_unspecified("single")
+    assert not is_married_unspecified("I am not married")
+    assert not is_married_unspecified("I was single, now married")
+    assert parse_joint_or_separate("together") == "mfj"
+    assert parse_joint_or_separate("we will file jointly") == "mfj"
+    assert parse_joint_or_separate("separately") == "mfs"
+    assert parse_joint_or_separate("not sure") is None
+
+def test_married_asks_whether_to_file_together_or_separately():
+    state = {"intake": {}}
+    q = next_question({})
+    state = handle_answer(state, "I am married", 1, q)
+    assert "filing_status" not in state["intake"]
+    assert state["intake"]["married_pending"] is True
+    assert state["flags"] == []
+    state = handle_answer(state, "separately", 2, q)
+    assert state["intake"]["filing_status"] == "mfs"
+    assert "married_pending" not in state["intake"]
+
+
+def test_married_follow_up_unclear_answer_is_uncertain():
+    q = next_question({})
+    state = handle_answer({"intake": {"married_pending": True}}, "not sure", 1, q)
+    assert "filing_status" not in state["intake"]
+    assert [f["type"] for f in state["flags"]] == ["uncertain_answer"]
+
+def test_changing_to_married_clears_the_old_status_until_answered():
+    q = next_question({})
+    state = handle_answer({"intake": {"filing_status": "single"}}, "married", 1, q)
+    assert "filing_status" not in state["intake"]
+    assert next_question(state["intake"])["field"] == "filing_status"
