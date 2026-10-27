@@ -11,7 +11,7 @@ class Rounding(unittest.TestCase):
     def test_A23_half_up_not_bankers(self):
         # Python's round() sends 0.5 and 2.5 to the even neighbour; the spec rounds half up (A23).
         self.assertEqual(tm.income_tax("single", 26775)["value"], 2975)   # 2974.5
-        self.assertEqual(tm.senior_deduction("single", 75025, 1)["value"], 5999)  # 5998.5
+        self.assertEqual(tm.senior_deduction("single", 75075, 1)["value"], 5995)  # line 34 = 4.5 -> 5, not 4
         self.assertEqual(tm.sum_amounts([{"label": "a", "value": 10.25}, {"label": "b", "value": 5.25}])["value"], 16)  # 15.5
 
     def test_A23_values_are_whole_dollar_ints(self):
@@ -79,6 +79,12 @@ class Deductions(unittest.TestCase):
                     with self.subTest(status=status, agi=agi, people=people):
                         self.assertEqual(tm.senior_deduction(status, agi, people)["value"],
                                          oracle.senior(status, agi, people))
+
+    def test_A23_C12_senior_deduction_rounds_schedule_1a_line_34_first(self):
+        # Schedule 1-A: line 34 = 6% of the excess, entered as a whole-dollar line; line 35 = 6,000 - line 34.
+        self.assertEqual(tm.senior_deduction("single", 75025, 1)["value"], 5998)   # 1.5 -> 2
+        self.assertEqual(tm.senior_deduction("mfj", 150005, 2)["value"], 12000)    # 0.30 -> 0, two people
+        self.assertEqual(tm.senior_deduction("mfj", 150025, 2)["value"], 11996)    # 1.5 -> 2, twice
 
     def test_C12_senior_deduction_mfs(self):
         # C12 / A12: MFS gets 0 whatever qualifier count Rules reports.
