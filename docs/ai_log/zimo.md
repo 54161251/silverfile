@@ -85,7 +85,7 @@ ran every test, committed and pushed myself. Claude never had direct access to m
 
 ## Disclosure paragraph (for docs/AI_DISCLOSURE.md)
 
-P3 (Zimo Li) used Claude [CONFIRM MODEL NAME] in the Claude app. Claude wrote the Intake agent
+P3 (Zimo Li) used Claude Sonnet 5.5 in the Claude app. Claude wrote the Intake agent
 and its tests in the chat, and I put the code into my local copy of the repository, ran the
 tests and committed it. Intake itself uses no AI model: it asks fixed questions and reads the
 answers with deterministic rules. Claude's mistakes that I caught by running the code are listed
