@@ -39,6 +39,10 @@ def batch(args):
     from src.batch import run_batch, save_run, write_metrics
     from src.dashboard.auth import load_env_file
     load_env_file()  # SILVERFILE_MODEL, ANTHROPIC_API_KEY (R6); real environment variables win
+    from src.api_key import load_api_key
+    if not args.estimate and not load_api_key():
+        raise SystemExit("No API key found. Set ANTHROPIC_API_KEY, put it in .env or "
+                         "api_key.txt, or run with --estimate.")
     strategy = "full_history" if args.no_context_strategy else "selective_recall"
     client = None
     if not args.estimate:
