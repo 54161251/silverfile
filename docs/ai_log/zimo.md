@@ -51,6 +51,37 @@ ran every test, committed and pushed myself. Claude never had direct access to m
   `main`: 382 passed, 20 skipped because OCR is not installed on my machine); a test that
   closes and reopens the SQLite database and resumes the session; reading Lluc's diff to check
   that none of my changes were lost.
+## Later work (10/28 to 10/29)
+
+- **What I asked Claude to do:** finish the filing-status questions, then Jad's tasks J1 and J2.
+- **What changed in Intake:**
+  1. Answering just "married" now asks a follow-up, "Will you file together with your spouse, or
+     separately?", and records the filing status from the reply. An unclear reply is flagged as
+     uncertain. Changing an earlier answer to "married" through go-back clears the old status.
+  2. The staff-help rule for filing status (E5) was narrowed to the words widow, widowed,
+     widower, divorced and separated, or a death word together with a spouse word. Plain
+     "married" no longer triggers it.
+  3. J2: after one question, "any of these, or none?", Intake asks for Form 1040 lines 8, 10, 17,
+     19, 20, 23 and 26 in plain words and writes numbers to `user_inputs`. "None" fills all seven
+     lines with 0. When Computation returns an open question such as `user_inputs.10`, Intake
+     maps it to the matching question. Line 25c is not asked because it was not on Jad's list.
+  4. J1: `src/api_key.py` reads `ANTHROPIC_API_KEY` from the environment, then `.env`, then a
+     gitignored `api_key.txt`. A blank value counts as missing, and the key is never printed.
+     `run.py batch` stops with a clear message if no key is found; `--estimate` needs no key.
+- **What Claude got wrong:**
+  - When it replaced `parse_filing_status`, it also deleted three word lists that other code
+    used. Many tests failed with a NameError. I put the lists back after running the tests.
+  - Three older tests assumed that "married" meant married filing jointly. They failed after
+    the follow-up question was added, and I updated them to the new wording.
+  - An edit to a test assertion left a wrong indentation, which caused an `IndentationError`;
+    Claude rewrote the whole test function.
+  - It said my teammate's change might cause a NameError for a removed import. I checked and
+    the import was still there, so there was no problem.
+- **Verification (run by me):** the full test suite after each change; the latest run was
+  396 passed, 20 skipped because OCR is not installed on my machine. The new tests for the API
+  key use fake strings only, and no real key was ever put in a file, in chat or in a commit.
+  The Intake work is in PR #41 and the API key work is in PR #42.
+
 
 ## Disclosure paragraph (for docs/AI_DISCLOSURE.md)
 
