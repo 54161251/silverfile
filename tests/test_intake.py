@@ -467,3 +467,48 @@ def test_changing_to_married_clears_the_old_status_until_answered():
     state = handle_answer({"intake": {"filing_status": "single"}}, "married", 1, q)
     assert "filing_status" not in state["intake"]
     assert next_question(state["intake"])["field"] == "filing_status"
+
+def test_parse_amount_understands_money_and_refuses_guesses():
+    from src.agents.intake import parse_amount
+    assert parse_amount("$1,200.50") == 1200.5
+    assert parse_amount("1200") == 1200
+    assert parse_amount("none") == 0
+    assert parse_amount("0.00") == 0
+    assert parse_amount("(500)") == -500
+    assert parse_amount("-500") == -500
+    assert parse_amount("twelve") is None
+    assert parse_amount("1-2") is None
+    assert parse_amount("12,34") is None
+    assert parse_amount("") is None
+
+def test_amount_questions_after_yes_are_saved_as_numbers():
+    q = next_question({}, ["intake.other_amounts.10"])
+    assert field_path(q) == "intake.has_other_amounts"
+    state = handle_answer({"intake": {}}, "yes", 1, q)
+    assert state["intake"]["has_other_amounts"] is True
+    q = next_question(state["intake"], ["intake.other_amounts.10"])
+    assert field_path(q) == "intake.other_amounts.10"
+    state = handle_answer(state, "$1,200.50", 2, q)
+    assert state["intake"]["other_amounts"]["10"] == 1200.5
+
+
+def test_computation_named_line_asks_the_gate_then_writes_zeros_to_user_inputs():
+    from langgraph.checkpoint.memory import MemorySaver
+    from langgraph.graph import END, START, StateGraph
+    from langgraph.types import Command
+
+    from src.agents.intake import run_interactive
+
+    builder = StateGraph(dict)
+    builder.add_node("intake", run_interactive)
+    builder.add_edge(START, "intake")
+    builder.add_edge("intake", END)
+    graph = builder.compile(checkpointer=MemorySaver())
+    config = {"configurable": {"thread_id": "amounts"}}
+
+    first = graph.invoke(
+        {"open_questions": ["user_inputs.10: ask the taxpayer (enter 0 if none)"]}, config)
+    assert first["__interrupt__"][0].value["fields"] == ["intake.has_other_amounts"]
+    final = graph.invoke(Command(resume={"answer": "no"}), config)
+    assert final["user_inputs"] == {
+        "8": 0, "10": 0, "17": 0, "19": 0, "20": 0, "23": 0, "26": 0}
