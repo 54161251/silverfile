@@ -467,3 +467,16 @@ def test_changing_to_married_clears_the_old_status_until_answered():
     state = handle_answer({"intake": {"filing_status": "single"}}, "married", 1, q)
     assert "filing_status" not in state["intake"]
     assert next_question(state["intake"])["field"] == "filing_status"
+
+def test_parse_amount_understands_money_and_refuses_guesses():
+    from src.agents.intake import parse_amount
+    assert parse_amount("$1,200.50") == 1200.5
+    assert parse_amount("1200") == 1200
+    assert parse_amount("none") == 0
+    assert parse_amount("0.00") == 0
+    assert parse_amount("(500)") == -500
+    assert parse_amount("-500") == -500
+    assert parse_amount("twelve") is None
+    assert parse_amount("1-2") is None
+    assert parse_amount("12,34") is None
+    assert parse_amount("") is None

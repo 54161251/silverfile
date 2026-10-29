@@ -232,6 +232,61 @@ def refund_in_progress(intake: dict) -> bool:
 def refund_is_deposit(intake: dict) -> bool:
     return (intake.get("refund") or {}).get("method") == "direct_deposit"
 
+ZERO_WORDS = {"none", "no", "nothing", "zero", "nil"}
+
+
+def parse_amount(answer: str):
+    """Turn '$1,200.50', '(500)', '-500' or 'none' into a number, or None if unclear."""
+    text = answer.strip().lower().rstrip(".")
+    if text in ZERO_WORDS:
+        return 0
+    match = re.fullmatch(r"(\()?(-)?\$?\s*(\d{1,3}(?:,\d{3})+|\d+)(\.\d{1,2})?(\))?", text)
+    if not match or bool(match.group(1)) != bool(match.group(5)):
+        return None
+    amount = float(match.group(3).replace(",", "") + (match.group(4) or ""))
+    if match.group(1) or match.group(2):
+        amount = -amount
+    return int(amount) if amount == int(amount) else amount
+
+
+def has_other_amounts(intake: dict) -> bool:
+    return intake.get("has_other_amounts") is True
+
+
+OTHER_AMOUNTS_GATE = {
+    "group": None,
+    "field": "has_other_amounts",
+    "text": ("Do you have any other amounts for 2025 that are not on the forms you gave us? "
+             "For example: other income, adjustments to income, extra taxes, tax credits, "
+             "or estimated tax payments you already made. Please answer yes or no."),
+    "parser": parse_yes_no,
+}
+
+# line -> (short label for the summary, question text)
+AMOUNT_LINES = {
+    "8": ("your other income",
+          "How much other income did you have in 2025 that is not on the forms you gave us "
+          "(for example, unemployment pay or gambling winnings)? Enter 0 if none. "
+          "If it was a loss, put a minus sign in front of the amount."),
+    "10": ("your adjustments to income",
+           "How much are your adjustments to income for 2025 (for example, a deductible IRA "
+           "contribution or student loan interest)? Enter 0 if none."),
+    "17": ("your extra tax from Schedule 2, line 3",
+           "Do you have an amount for Schedule 2, line 3 (for example, alternative minimum "
+           "tax or repaying health-insurance subsidies)? Enter the amount, or 0 if none."),
+    "19": ("your child tax credit",
+           "How much child tax credit or credit for other dependents do you have for 2025? "
+           "Enter 0 if none."),
+    "20": ("your other credits",
+           "How much do you have from Schedule 3, line 8 (other credits, for example the "
+           "foreign tax credit or education credits)? Enter 0 if none."),
+    "23": ("your other taxes",
+           "How much do you have for other taxes, such as self-employment tax "
+           "(Schedule 2, line 21)? Enter 0 if none."),
+    "26": ("your estimated tax payments",
+           "How much estimated tax did you pay for 2025, including any overpayment from your "
+           "2024 return that you applied to 2025? Enter 0 if none."),
+}
 
 QUESTIONS = [
     {
@@ -317,6 +372,13 @@ QUESTIONS = [
     },
 ]
 
+QUESTIONS.extend(
+    {"group": "other_amounts", "field": line, "text": text,
+     "parser": parse_amount, "only_if": has_other_amounts}
+    for line, (_label, text) in AMOUNT_LINES.items()
+)
+
+
 def field_path(question: dict) -> str:
     """Full path used by Rules and the staff UI, e.g. intake.taxpayer.birth_date."""
     parts = ["intake", question["group"], question["field"]]
@@ -391,6 +453,8 @@ LABELS = {
     "intake.refund.account_owner": "whose name is on the bank account",
 }
 
+LABELS.update({f"intake.other_amounts.{line}": label
+               for line, (label, _text) in AMOUNT_LINES.items()})
 
 def build_summary(intake: dict) -> str:
     """Plain-language recap of what is already answered and what is left."""
