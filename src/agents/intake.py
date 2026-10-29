@@ -428,7 +428,12 @@ def next_question(intake: dict, missing: list | None = None) -> dict | None:
     Paths named by Rules (`missing`) come first; otherwise follow QUESTIONS order.
     """
     for path in missing or []:
-        question = question_for_path(path) or dependent_question(path)
+        if (path.startswith("intake.other_amounts.")
+                and path.rsplit(".", 1)[-1] in AMOUNT_LINES
+                and intake.get("has_other_amounts") is None):
+            question = OTHER_AMOUNTS_GATE
+        else:
+            question = question_for_path(path) or dependent_question(path)
         if question is not None and not _is_filled(intake, question):
             return question
     for question in QUESTIONS:
@@ -581,6 +586,11 @@ def handle_answer(state: dict, answer: str, turn_id: int, question: dict | None 
     else:
         intake = record_answer(intake, question["field"], value)
 
+    if question["field"] == "has_other_amounts" and value is False:
+        amounts = dict(intake.get("other_amounts") or {})
+        for line in AMOUNT_LINES:
+            amounts.setdefault(line, 0)
+        intake = record_answer(intake, "other_amounts", amounts)
     return {"intake": intake, "flags": flags}
 
 def run(state: dict) -> dict:
@@ -604,11 +614,26 @@ def run(state: dict) -> dict:
         "open_questions": [question["field"]] if question else [],
     }
 
+def missing_paths(state: dict) -> list:
+    """Paths Rules or Computation say are missing, as intake.* field paths."""
+    missing = list((state.get("eligibility") or {}).get("missing") or [])
+    for text in state.get("open_questions") or []:
+        path = str(text).split(":")[0].strip()
+        if path.startswith("user_inputs.") and path.split(".", 1)[1] in AMOUNT_LINES:
+            missing.append("intake.other_amounts." + path.split(".", 1)[1])
+    return missing
 
-def run_interactive(state: dict) -> dict:
+
+def with_user_inputs(state: dict, intake: dict) -> dict:
+    """Copy the answered amounts into user_inputs, where Computation reads them."""
+    inputs = dict(state.get("user_inputs") or {})
+    inputs.update(intake.get("other_amounts") or {})
+    return inputs
+
+def _run_interactive(state: dict) -> dict:
     intake = state.get("intake") or {}
     flags = list(state.get("flags") or [])
-    missing = (state.get("eligibility") or {}).get("missing")
+    missing = missing_paths(state)
     notice = build_summary(intake)
     target = None  # a question the user asked to revisit
 
@@ -670,4 +695,8 @@ def run_interactive(state: dict) -> dict:
         return {"intake": intake, "flags": flags,
                 "session_summary": build_summary(intake),
                 "open_questions": [field_path(next_q)] if next_q else []}
-    
+
+def run_interactive(state: dict) -> dict:
+    result = _run_interactive(state)
+    result["user_inputs"] = with_user_inputs(state, result["intake"])
+    return result
