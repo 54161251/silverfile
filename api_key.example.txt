@@ -1,0 +1,1 @@
+# Copy this file to api_key.txt and put your key on the next line. Never commit api_key.txt.
