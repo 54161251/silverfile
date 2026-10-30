@@ -2,25 +2,25 @@
 
 A shared workspace for the team's seven-person SilverFile project: six agents plus a dashboard/demo workstream.
 
-**Status checked October 30, 2026 (main at `117ce39`): all six agents run as real adapters. `python run.py start --input ...` takes both evaluation cases to `draft_ready` (case 2 after staff resolve E6), the full test suite passed locally (Python 3.12.15; CI uses 3.11), and goldens g01-g06 pass Review. Not demonstrated in this repo: the demo video and a Docker run by the person who last edited this page (see [Docker](#docker)). Read [Known limits](#known-limits) before relying on a return.**
+**Status checked October 30, 2026 against main `117ce39`: all six agent modules, the taxpayer page, W-2 upload, staff dashboard, form output, CI and Docker configuration are present. Real API context-token measurements and sanitized evaluation traces are committed. Submission is not yet signed off: the Intake risk-flag handoff still needs a fix and final image-based regression checks.**
 
 ## Current implementation
 
 | Owner | Component | Current state | Details |
 |---|---|---|---|
-| P1 — Kaiwen | Contracts, orchestration, checkpoints, interrupts, guards | Implemented; document correction/versioning needs integration | [P1 handoff](docs/IMPLEMENTATION_NOTES.md) |
-| P2 — Jad | Computation and deterministic MCP tools | Implemented; golden returns need human verification | [Computation](docs/P2_COMPUTATION.md) |
-| P3 — Zimo | Conversational Intake, memory and context metrics | Interactive Intake (core questions; optional "other amounts" questions, see Known limits), taxpayer page and context-strategy metrics implemented | [Intake integration](docs/P1_INTAKE_HANDOFF.md) |
-| P4 — Christina | W-2 image extraction, security and fixtures | Implemented: W-2 image OCR (Tesseract), SSN rule, PII masking, synthetic fixtures and eval inputs | [Tasks](TASKS.md) |
-| P5 — Lluc | Eligibility, Rules and escalations | Implemented | [Rules interface](docs/p5_rules_interface.md) |
-| P6 — Ziling | Review, CI and Docker | Implemented; grader simulation recorded in [P6_GRADER_SIM](docs/P6_GRADER_SIM.md) | [Review](docs/P6_REVIEW.md) |
-| P7 — David | Staff dashboard, human resolution, HTML/PDF output | Implemented; the demo video is not in this repo | [Dashboard](docs/P7_DASHBOARD.md) |
+| P1 — Kaiwen | Orchestration, shared contracts, persistence, interrupts and guards | Implemented; corrected-document replacement remains open | [P1 handoff](docs/IMPLEMENTATION_NOTES.md) |
+| P2 — Jad | Computation and deterministic MCP tools | Implemented; staff box overrides and tool-based summation/rounding connected; independent human golden re-derivation remains open | [Computation](docs/P2_COMPUTATION.md) |
+| P3 — Zimo | Intake, summaries and context metrics | Expanded questions and direct-entry lines connected; real token counts recorded; risk flags can remain inside Intake instead of reaching Rules | [Metrics](docs/metrics.md) |
+| P4 — Christina | W-2 OCR, security and fixtures | Tesseract extraction, synthetic W-2s, ten-document household batch and eval fixtures merged | [Extraction](docs/P4_EXTRACTION_SECURITY.md) |
+| P5 — Lluc | Rules and escalations | Implemented, including unreadable-document and low-confidence checks | [Rules interface](docs/p5_rules_interface.md) |
+| P6 — Ziling | Review, CI, Docker and evaluation evidence | Golden cases g01–g06 reviewed in CI; traces and grader simulation recorded; final-revision rerun still needed | [Grader simulation](docs/P6_GRADER_SIM.md) |
+| P7 — David | Taxpayer uploads, staff resolution and HTML/PDF output | Implemented; final video and final report delivery links still need confirmation | [Dashboard](docs/P7_DASHBOARD.md) |
 
-“Implemented” describes a component, not acceptance of the complete application.
-`python run.py start --input ...` runs the real agents (production mode). `--demo` runs the
-routing skeleton with real Intake and Rules but placeholder Extraction, Computation and Review;
-it ends as `scaffold_complete` and calculates no tax. The dashboard's **Sample returns** tab
-separately invokes real Computation on golden data. These are different demonstrations.
+Production mode loads real Intake, Extraction, Rules, Computation and Review agents. The
+`--demo` mode deliberately uses placeholder Extraction/Computation/Review adapters and
+ends as `scaffold_complete`; it does not calculate a return. Dashboard sample returns
+are a separate Computation preview. Use the production evaluation commands below to
+check the actual graph.
 
 ## Start here
 
@@ -55,108 +55,70 @@ flowchart TD
   O -->|Loop limit reached| S[Stop for human review]
 ```
 
-The routing topology is implemented; only `--demo` uses placeholder adapters. Intake is the only agent that converses with the taxpayer; the orchestrator only routes work.
+The routing topology and production adapters are implemented; the offline demo retains explicit placeholder adapters. Intake is the only agent that converses with the taxpayer; the orchestrator only routes work.
 
 ## Repository map
 
 | Location | Purpose |
 |---|---|
-| `src/agents/` | Intake, Extraction, Rules, Computation and Review (plus Intake's document briefing) |
+| `src/agents/` | Intake, Extraction, Rules, Computation and Review; document briefing for the batch command |
 | `src/graph.py`, `src/memory.py`, `src/state.py` | Routing, SQLite sessions and shared contracts |
-| `src/demo_agents.py` | Placeholders for `--demo` only, separate from production adapters |
+| `src/demo_agents.py` | Explicit offline placeholders, separate from production adapters |
 | `streamlit_app.py`, `src/dashboard/` | Staff UI, resolution, provenance and form rendering |
 | `src/tools/` | Deterministic MCP calculation tools |
 | `tests/golden/` | Synthetic computation cases; human cross-check still required |
-| `data/fixtures/`, `evals/` | Synthetic W-2 images, the 10-document batch, evaluation case definitions and grader-simulation inputs |
+| `data/fixtures/`, `evals/` | Synthetic W-2 images, a ten-document household batch and evaluation scenarios |
 | `tests/` | Routing, reducer, calculation, and loop-guard tests |
-| `traces/` | Sanitized traces of both eval cases (rebuild: `python traces/make_traces.py`) |
+| `traces/` | Sanitized execution evidence |
 | `docs/` | Architecture, metrics, implementation notes, AI disclosure |
-| `demo/` | Eval case walkthroughs and inputs, dashboard walkthrough |
-| `.github/workflows/ci.yml` | Python 3.11: full test suite, then Review of goldens g01-g06 |
+| `demo/` | Evaluation inputs and walkthroughs; final video link not yet confirmed |
+| `.github/workflows/ci.yml` | Python 3.11 tests and selected golden-return reviews |
 | `Dockerfile`, `docker-compose.yml` | Container setup and dashboard service |
 
 ## Running the project
 
-### Install
-
-Use Python 3.11 (team target and CI configuration; the suite also passed on 3.12.15). Reading
-W-2 images also needs the Tesseract OCR program, which pip cannot install: `brew install
-tesseract` (macOS), `sudo apt-get install tesseract-ocr` (Ubuntu), or the UB Mannheim installer
-(Windows). Without it the image tests are skipped and an image upload stops with an "OCR is not
-installed" error. The Docker image and CI already include it.
+Use Python 3.11 (team target and CI configuration). Run the current tests in your own
+environment; do not treat a historical test count as the latest CI result.
 
 ```sh
 python -m venv .venv
-source .venv/bin/activate          # Windows PowerShell: .venv\Scripts\Activate.ps1
+```
+
+Activate with `.venv\Scripts\Activate.ps1` on Windows PowerShell or `source .venv/bin/activate` on macOS/Linux. Then:
+
+```sh
 python -m pip install -r requirements.txt
-```
-
-### Run the tests
-
-```sh
 python -m pytest -q
-for g in tests/golden/g0[1-6]_*.json; do python -m src.agents.review "$g" | head -1; done   # each prints "verdict: pass"
-```
-
-Do not treat a historical test count as the latest CI result; check the
-[Actions results](https://github.com/54161251/silverfile/actions).
-
-### Run the two evaluation cases (real adapters, no API key)
-
-Each case needs a new `--thread-id` (reusing one fails with "Cannot complete operation (ValueError)"). Sessions are
-saved in `runtime/sessions.sqlite` (or `--db` / `SILVERFILE_DB`). Full walkthroughs:
-[case 1](demo/eval_case_1.md), [case 2](demo/eval_case_2.md).
-
-```sh
-# Case 1: clean run, ends draft_ready, line 34 refund = 2,650
-python run.py start --input demo/eval_case_1_input.json --thread-id eval-case-1
-python run.py status --thread-id eval-case-1
-
-# Case 2: stops at E6 (awaiting_human), staff resolve, ends draft_ready, line 34 refund = 1,995
-python run.py start  --input demo/eval_case_2_input.json --thread-id eval-case-2
-python run.py status --thread-id eval-case-2
-python run.py resume --input demo/eval_case_2_resolution.json --thread-id eval-case-2
-python run.py status --thread-id eval-case-2
-```
-
-Case 2 can also be resolved in the dashboard (steps in `demo/eval_case_2.md`). To try your own
-W-2, make a synthetic image with `python data/generate_fixtures.py --custom my_w2.jpg --wages ...
---withheld ... --ssn 900-11-2222 --name "Sam Placeholder"`, copy `demo/eval_case_1_input.json`,
-and point `source_file` at your image (see "Make your own clean case" in `demo/eval_case_1.md`).
-SSNs must be in the 900-999 test range; a W-2 showing any other SSN stops the session at E7.
-
-### Provide your own API key
-
-Tests, the eval cases and the dashboard need no key. Only `python run.py batch` (the spec 4.5
-token measurement) calls the model. The code looks for `ANTHROPIC_API_KEY` in this order:
-
-1. a real environment variable;
-2. `.env` (copy `.env.example` and fill in `ANTHROPIC_API_KEY=`);
-3. `api_key.txt` (copy `api_key.example.txt`, put the key on its own line).
-
-`.env` and `api_key.txt` are gitignored; never commit them. A blank value counts as missing.
-`SILVERFILE_MODEL` in `.env` chooses the model.
-
-```sh
-python run.py batch --no-context-strategy   # context strategy off: full history resent
-python run.py batch                         # context strategy on
-python run.py batch --estimate              # no key, no API call; estimates only (rewrites docs/metrics.md)
-```
-
-Without a key, `run.py batch` exits with "No API key found..." and does not print a traceback.
-Results are written to `docs/metrics.md`.
-
-### Offline routing demo
-
-```sh
 python run.py start --demo --thread-id first-demo
 ```
 
-This uses synthetic structured documents, real Intake and Rules, and placeholder
-Extraction/Computation/Review adapters. It ends as **scaffold_complete**, not a completed tax
-return. See the [persistent human-review walkthrough](demo/P1_WALKTHROUGH.md) and
-[integration handoff](docs/IMPLEMENTATION_NOTES.md). Use the same `--db` and `--thread-id` to
-resume.
+Reading W-2 images (both eval cases in `demo/`) also needs the Tesseract OCR program,
+which pip cannot install: `brew install tesseract` (macOS), `sudo apt-get install
+tesseract-ocr` (Ubuntu), or the UB Mannheim installer (Windows). Without it the image
+tests are skipped and an image upload stops with an "OCR is not installed" error. The
+Docker image and CI already include it.
+
+The demo uses synthetic structured documents, real Intake and Rules, and placeholder
+Extraction/Computation/Review adapters. It ends as **scaffold_complete**, not a
+completed tax return. No API key is needed. See [persistent human-review walkthrough](demo/P1_WALKTHROUGH.md)
+and [integration handoff](docs/IMPLEMENTATION_NOTES.md).
+
+Production adapters are under `src/agents/`: Intake uses `run_interactive(state)`;
+the other specialists use `run(state)`. To run the real graph with W-2 images:
+
+```sh
+python run.py start --input demo/eval_case_1_input.json --thread-id eval-clean
+python run.py status --thread-id eval-clean
+python run.py start --input demo/eval_case_2_input.json --thread-id eval-hitl
+python run.py resume --thread-id eval-hitl --input demo/eval_case_2_resolution.json
+```
+
+Use a fresh thread ID for each new run. The second case should pause at E6 before staff
+resolution. See the [clean case](demo/eval_case_1.md) and
+[human-review case](demo/eval_case_2.md) for recorded expected results. Runtime SQLite files live under ignored
+`runtime/`; use the same `--db` and `--thread-id` for resume. `SILVERFILE_DB` optionally
+sets the database path. P1 uses no API credentials; model configuration belongs to the
+agent owners.
 
 ### Staff dashboard
 
@@ -174,8 +136,10 @@ an escalation; without them, the dashboard is read-only. The CLI and dashboard m
 the same database. Set `SILVERFILE_DB` in the shell for CLI commands if changing the
 default; the Streamlit entry point also loads `.env`.
 
-Use **Sample returns** for computed HTML/PDF previews. Demo sessions remain routing
-examples and show no computed form lines. See [dashboard walkthrough](demo/P7_DASHBOARD_WALKTHROUGH.md).
+Use **Sample returns** for separate computed HTML/PDF previews. Production sessions
+show the actual graph results once draft-ready. Demo sessions remain routing examples
+and show no computed form lines. The taxpayer page supports W-2 image/PDF upload and
+one-question-at-a-time answers. See [dashboard walkthrough](demo/P7_DASHBOARD_WALKTHROUGH.md).
 
 ### Docker
 
@@ -195,37 +159,72 @@ docker compose run --rm silverfile python -m pytest -q
 docker compose down
 ```
 
-Docker was not re-run when this page was updated. P6 recorded a macOS Docker build and both
-eval cases run in the container ([P6_GRADER_SIM](docs/P6_GRADER_SIM.md)). To run a case in a
-running container: `docker compose exec silverfile python run.py start --input
-demo/eval_case_1_input.json --thread-id eval-case-1` (that exact command line was not run by the
-person who wrote this note). To give the container an API key, put it in `.env`; Compose passes
-`.env` into the container as environment variables (`env_file`) and does not copy it into the
-image. CI runs the full test suite and reviews goldens g01-g06 (g02-g04 now carry the 1099-R
-code and pass Review locally); check the
-[Actions results](https://github.com/54161251/silverfile/actions) for actual outcomes.
+P6 records Docker evaluation runs and grader-created cases in
+[the grader simulation](docs/P6_GRADER_SIM.md). The entrypoint currently seeds `--demo`
+routing examples, not the completed production evaluation cases. Run the production
+commands above inside the container when verifying image-to-draft behavior.
+
+CI installs Tesseract, runs the full suite on Python 3.11, and computes/reviews golden
+cases g01–g06. Check [Actions](https://github.com/54161251/silverfile/actions) for the
+current result. A local October 30 run against `117ce39` passed 399 tests and 610 subtests;
+20 OCR-dependent tests were skipped because this Windows host has no Tesseract. That
+run does not establish local OCR coverage or a new Docker verification.
+
+## Context-window measurements
+
+[The metrics table](docs/metrics.md) now records actual API input-token counts for both
+strategies on ten W-2s for one household. At document ten, full-history input was 3,031
+tokens and selective recall was 1,040. Offline estimates are labeled separately.
+
+```sh
+python run.py batch --no-context-strategy
+python run.py batch
+```
+
+These commands need Tesseract and a model API key. Set `ANTHROPIC_API_KEY` in the
+environment or local `.env`, or put it in the ignored `api_key.txt` file. Environment
+values take priority. Set `SILVERFILE_MODEL` in the environment or `.env`. Never commit
+credentials. `--estimate` avoids the API call but still extracts the batch images.
+The ordinary graph and tests need no model key. This documentation update inspected
+the committed table; it did not make paid API calls or independently rerun the measurements.
 
 ![P1 graph overview](docs/graph.png)
 
-## Known limits
+## Input coverage and calculation limits
 
-- **Some lines are entered as 0 unless supplied.** Form 1040-SR lines 8, 10, 17, 19, 20, 23, 25c
-  and 26 default to 0 with kind `default_zero` (shown on the dashboard) when no value is given.
-  Intake asks for lines 8, 10, 17, 19, 20, 23 and 26 only when Computation names one as missing,
-  which it does not today, and never asks for 25c. A taxpayer with, say, estimated payments
-  (line 26) who is not asked can get a draft that **understates the refund**. Staff must check
-  these lines.
-- **Extraction reads W-2 images only.** 1099-INT, 1099-DIV, 1099-R and SSA-1099 values, and the
-  1099-R keys `ira_sep_simple` and `qcd_amount`, work through structured input only, not OCR.
-- Line 16 uses the rate schedule, not the qualified-dividend worksheet, so tax can differ from
-  commercial software (assumption A14). More limits: [docs/P2_COMPUTATION.md](docs/P2_COMPUTATION.md).
+- Image/PDF OCR reads W-2s. Other supported forms (1099-INT, 1099-DIV, 1099-R and
+  SSA-1099) currently require structured input; 1099-R `ira_sep_simple` and `qcd_amount`
+  are also structured fields.
+- Direct-entry lines default to zero when not supplied. Intake's optional questions for
+  lines 8, 10, 17, 19, 20, 23 and 26 are selected when Computation reports a missing path;
+  the current default-zero behavior can bypass those questions. Line 25c has no question.
+  Staff must check these amounts to avoid an incomplete draft or understated refund.
+- Qualified dividends use ordinary rates under assumption A14; see the P2 notes and
+  grader simulation for the resulting limitation.
 
-## Open submission work
+## Integration and submission work still open
 
-- Human re-derivation of the golden returns (R12): so far only AI-assisted checks are recorded.
-- Demo video, five-page report, and verifying setup on another teammate's machine.
+1. **Fix Intake risk escalation:** on `117ce39`, “I am answering for my mother” causes
+   another Intake interrupt with no saved flag or escalation. Return new risk flags to
+   the graph promptly so Rules can act; add a graph-level regression test.
+2. Rerun both image-based production scenarios and a new input on the final revision
+   after the fix, including durable staff resume and displayed return/provenance.
+3. Define corrected-document replacement/versioning so replacing an upload cannot
+   double-count it. Skipping already-extracted IDs prevents reread conflicts but does
+   not implement replacement semantics.
+4. Keep the qualified-dividend limitation explicit: current calculations use ordinary
+   rates rather than the qualified-dividend/capital-gain worksheet. See the grader
+   simulation and P2 notes. Golden spreadsheet/source checking was AI-assisted;
+   independent human re-derivation is not recorded.
+5. Confirm delivery of the final report and 5–10 minute video, grader access to this
+   private repository, Canvas submission requirements, and seven-person team approval.
+   These may be handled outside GitHub; repository evidence does not confirm them.
+6. Finish personal review records and remaining placeholders in AI logs. The P3 and P4
+   logs are present; the combined [AI disclosure](docs/AI_DISCLOSURE.md) describes their
+   recorded work and remaining limits.
 
-See [TASKS.md](TASKS.md) and the linked owner notes for details and evidence.
+Recorded evidence is in [traces](traces/), [grader simulation](docs/P6_GRADER_SIM.md),
+and [metrics](docs/metrics.md). Historical runs are not a final-revision sign-off.
 
 ## Keeping this README current
 

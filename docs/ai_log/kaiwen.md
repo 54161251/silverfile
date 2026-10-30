@@ -39,3 +39,13 @@ Codex refreshed README against current main, including P2/P6/P7 components, sepa
 demo behavior from production gaps, and added contributor documentation responsibilities
 to CONTRIBUTING and the PR template. Verification: local Markdown link targets and diff
 formatting checked. No new Docker run or full-suite success is claimed by this docs update.
+
+## October 30, 2026 — submission documentation audit
+
+OpenAI Codex inspected main `117ce39`, GitHub CI/PR state, current code, metrics, traces
+and individual AI logs, then drafted README, backlog and combined-disclosure corrections.
+It removed stale missing-component claims, retained the unresolved Intake risk handoff,
+and distinguished recorded runs from final submission acceptance. A preceding audit
+ran 399 tests and 610 subtests locally with 20 OCR skips; this documentation-only change
+uses link checks and `git diff --check`, without claiming a new Docker/OCR/API run.
+These are AI-assisted inspections, not a claim that Kaiwen independently re-derived tax results.
