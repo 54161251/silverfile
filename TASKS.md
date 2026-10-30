@@ -14,7 +14,7 @@ Owners follow TEAM.md and the team's Google Doc. Current completion status and r
 
 ## Status audit — October 30, 2026
 
-Checked against main `117ce39`. Checkboxes below distinguish committed implementation
+Updated against main `1a957a2`. Checkboxes below distinguish committed implementation
 and recorded evidence from final submission sign-off. Historical owner updates are in
 Git history and linked workstream notes.
 
@@ -34,12 +34,12 @@ Git history and linked workstream notes.
 - [x] All seven individual AI logs are present; combined disclosure exists, with remaining review items below.
 
 ### Submission priorities
-1. [ ] **P3/P1: repair Intake risk-flag handoff.** On audited main, a recognized third-party answer continues Intake without persisting the flag or reaching staff review. Return new risk flags to Rules promptly and add full-graph tests.
+1. [x] **P3/P1: repair Intake risk-flag handoff.** PRs #49 and #51 return advice, third-party, out-of-scope and contradiction flags to Rules before another taxpayer question. Third-party/advice/out-of-scope paths were graph-tested during review; final-revision verification remains below.
 2. [ ] **P6/all owners: verify the final revision.** Run both production image cases, staff resume after a restart, and a new grader-style input. Check displayed return lines and provenance. Record environment, exact revision and results.
 3. [ ] **P1/P4/P2: define corrected-document replacement.** Extract-once handling is present, but it does not replace superseded records or prevent double counting when corrections get new IDs.
-4. [ ] **P2: finish the final report and independent human golden review.** The Oct 27 IRS-source/spreadsheet check was performed with AI; no human re-derivation is recorded. State the ordinary-rate treatment of qualified dividends explicitly.
+4. [ ] **P2: reconcile the uploaded report and complete independent human golden review.** `Extra Credit Report SilverFile.pdf` is committed. The editable Google Doc (Report SilverFile v2) was read on October 30 and still describes the October 27/PR #35 snapshot. Reconcile its Intake paragraph, failure-mode row and P3 contribution row: direct-entry questions and Computation-path mapping now exist, though default-zero behavior can bypass them; real token measurements and P3's AI log are present. Its P6 row should acknowledge the committed grader simulation while retaining the need for final-revision checks. The P2 row should no longer say the report itself is absent. The PDF has seven pages including front matter; check the applicable report-length requirement. The Oct 27 IRS-source/spreadsheet check was AI-assisted; no human re-derivation is recorded. Retain the qualified-dividend limitation.
 5. [ ] **P7: deliver and link the 5–10 minute video.** Confirm the final demo shows the complete production workflow and accessibility choices.
-6. [ ] **All owners: finish personal code review and AI-log cleanup.** P3's introductory model/date placeholders remain; do not invent personal verification.
+6. [ ] **All owners: finish personal code review and AI-log cleanup.** P3's model/date entries and October 30 risk-handoff record are supplied in PR #55; remaining personal review must be recorded by its author.
 7. [ ] **P1: confirm grader access and submission.** Repository is private. Confirm access, final report/video locations, Canvas upload requirements, deadline and seven-person/P7 approval with the instructor.
 
 P2 records a fresh-clone setup check on one machine on October 30; a second-person
@@ -64,5 +64,5 @@ with a recorded answer; repository code is not evidence of instructor approval.
 
 ### Optional stretch delivery
 - [x] Staff dashboard resolution functionality is implemented; final demonstration pending.
-- [ ] Verify the required five-page report format and deliver it if claiming report stretch credit.
+- [ ] Verify report length and final content for stretch credit; the uploaded seven-page PDF is present and linked from README.
 - [ ] Rerun Docker from a fresh setup on the final revision and retain the result if claiming container stretch credit.

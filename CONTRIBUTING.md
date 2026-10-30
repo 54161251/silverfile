@@ -5,7 +5,7 @@
 3. Keep changes focused and commit your own contributions.
 4. Open a pull request explaining the behavior, checks performed, and remaining gaps.
 5. Teammates may merge their own PRs once relevant tests pass, there are no unresolved major issues, and conflicts are resolved. A teammate review is encouraged; P1 approval is not required for routine changes. Coordinate changes to shared contracts with affected owners. Do not overwrite another person's work.
-6. Include TASKS.md and relevant documentation changes in the same PR as the feature. Follow README's “Keeping this README current” section; explain in the PR if documentation is unaffected.
+6. Include TASKS.md and relevant documentation changes in the same PR as the feature. Keep README setup, feature descriptions and known limitations consistent with the code; explain in the PR if documentation is unaffected.
 
 Never commit `.env`, API keys, real SSNs, or real financial documents. Use synthetic fixtures only. Record AI assistance accurately in docs/AI_DISCLOSURE.md.
 
