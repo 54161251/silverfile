@@ -181,10 +181,13 @@ python run.py batch --no-context-strategy
 python run.py batch
 ```
 
-These commands need Tesseract and a model API key. Set `ANTHROPIC_API_KEY` in the
-environment or local `.env`, or put it in the ignored `api_key.txt` file. Environment
-values take priority. Set `SILVERFILE_MODEL` in the environment or `.env`. Never commit
-credentials. `--estimate` avoids the API call but still extracts the batch images.
+These commands need Tesseract and a model API key. The key can go in the environment
+(`ANTHROPIC_API_KEY`), in a local `.env` (`ANTHROPIC_API_KEY=...`), or in the ignored
+`api_key.txt` file (copy `api_key.example.txt`); they are checked in that order and the
+first non-blank value is used. `SILVERFILE_MODEL` is optional (set it in the environment or
+`.env` to override) and defaults to `claude-opus-5-5`, so a key in `api_key.txt` alone is
+enough. Never commit credentials. `--estimate` avoids the API call but still extracts the
+batch images.
 The ordinary graph and tests need no model key. This documentation update inspected
 the committed table; it did not make paid API calls or independently rerun the measurements.
 
