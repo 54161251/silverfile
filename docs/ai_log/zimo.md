@@ -2,11 +2,11 @@
 
 R19: tool used, task, what it got wrong, what I changed.
 
-Tool for every entry: Claude [CONFIRM MODEL NAME] in the Claude app. Claude wrote the code
+Tool for every entry: Claude Sonnet 5.5 (Claude Opus 5.5 for the October 30 fix) in the Claude app. Claude wrote the code
 and tests in the chat and told me which file to put them in; I pasted them into my own clone,
 ran every test, committed and pushed myself. Claude never had direct access to my repository.
 
-## [CHECK DATE] - Intake agent
+## 2026-10-25 - Intake agent
 
 - **Task:** `src/agents/intake.py` and `tests/test_intake.py`: the only agent that talks to the
   taxpayer. One question at a time, plain language, no arithmetic, no advice. Answers become
@@ -83,9 +83,21 @@ ran every test, committed and pushed myself. Claude never had direct access to m
   The Intake work is in PR #41 and the API key work is in PR #42.
 
 
+## 2026-10-30 - Risk flags reach Rules right away
+
+- **What I asked Claude to do:** fix a review finding: Intake recorded risk flags but kept
+  asking questions inside the node, so Rules could not see a flag until the next answer.
+- **What changed:** advice requests (E4), someone else answering (E6), out-of-scope items (E1)
+  and contradictions (E2) now make Intake return at once, so Rules and a colleague see the flag
+  before any more questions. The unanswered question is asked again afterwards. PR #51.
+- **What Claude got wrong:** Claude first left contradictions out, because an earlier design
+  only recorded them. A second review pointed this out, and contradictions now hand over too.
+- **Verification (run by me):** updated the two tests that checked the old behaviour, added
+  hand-over tests, and ran the full suite: 402 passed, 0 failed.
+
 ## Disclosure paragraph (for docs/AI_DISCLOSURE.md)
 
-P3 (Zimo Li) used Claude Sonnet 5.5 in the Claude app. Claude wrote the Intake agent
+P3 (Zimo Li) used Claude Sonnet 5.5 (Claude Opus 5.5 for the October 30 fix) in the Claude app. Claude wrote the Intake agent
 and its tests in the chat, and I put the code into my local copy of the repository, ran the
 tests and committed it. Intake itself uses no AI model: it asks fixed questions and reads the
 answers with deterministic rules. Claude's mistakes that I caught by running the code are listed
