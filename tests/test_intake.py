@@ -116,7 +116,7 @@ def test_advice_request_is_flagged_and_not_answered():
     assert result["flags"][0]["type"] == "advice_request"
     assert result["open_questions"] == ["filing_status"]
 
-def test_advice_request_gets_polite_notice_and_same_question():
+def test_advice_request_hands_over_before_more_questions():
     from langgraph.checkpoint.memory import MemorySaver
     from langgraph.graph import END, START, StateGraph
     from langgraph.types import Command
@@ -132,9 +132,10 @@ def test_advice_request_gets_polite_notice_and_same_question():
     second = graph.invoke(
         Command(resume={"answer": "Should I convert my IRA to a Roth?"}), config
     )
-    payload = second["__interrupt__"][0].value
-    assert "can't advise" in payload["question"]
-    assert payload["fields"] == ["intake.filing_status"]
+    assert "__interrupt__" not in second
+    assert [f["type"] for f in second["flags"]] == ["advice_request"]
+    assert "can't advise" in second["session_summary"]
+    assert second["open_questions"] == ["intake.filing_status"]
 
 def test_summary_lists_done_and_remaining():
     text = build_summary({"filing_status": "single"})
@@ -200,7 +201,7 @@ def test_third_party_answer_is_flagged_and_not_saved():
     assert result["intake"] == {}
     assert result["flags"][0]["type"] == "third_party_answering"
 
-def test_third_party_gets_notice_and_same_question():
+def test_third_party_hands_over_before_more_questions():
     from langgraph.checkpoint.memory import MemorySaver
     from langgraph.graph import END, START, StateGraph
     from langgraph.types import Command
@@ -216,9 +217,10 @@ def test_third_party_gets_notice_and_same_question():
     second = graph.invoke(
         Command(resume={"answer": "I am answering for my mother"}), config
     )
-    payload = second["__interrupt__"][0].value
-    assert "colleague" in payload["question"]
-    assert payload["fields"] == ["intake.filing_status"]
+    assert "__interrupt__" not in second
+    assert [f["type"] for f in second["flags"]] == ["third_party_answering"]
+    assert "colleague" in second["session_summary"]
+    assert second["open_questions"] == ["intake.filing_status"]
 
 def test_spouse_question_only_asked_when_married_joint():
     base = {"taxpayer": {"birth_date": "1958-03-05", "ssn": "901-55-1234",
@@ -512,3 +514,38 @@ def test_computation_named_line_asks_the_gate_then_writes_zeros_to_user_inputs()
     final = graph.invoke(Command(resume={"answer": "no"}), config)
     assert final["user_inputs"] == {
         "8": 0, "10": 0, "17": 0, "19": 0, "20": 0, "23": 0, "26": 0}
+
+
+def _intake_graph(thread_id):
+    from langgraph.checkpoint.memory import MemorySaver
+    from langgraph.graph import END, START, StateGraph
+
+    builder = StateGraph(dict)
+    builder.add_node("intake", run_interactive)
+    builder.add_edge(START, "intake")
+    builder.add_edge("intake", END)
+    return builder.compile(checkpointer=MemorySaver()), {"configurable": {"thread_id": thread_id}}
+
+
+def test_out_of_scope_mention_hands_over_before_more_questions():
+    from langgraph.types import Command
+
+    graph, config = _intake_graph("t-handover-oos")
+    graph.invoke({}, config)
+    second = graph.invoke(Command(resume={"answer": "I also rent out a house"}), config)
+    assert "__interrupt__" not in second
+    assert [f["type"] for f in second["flags"]] == ["out_of_scope_mention"]
+    assert second["open_questions"] == ["intake.filing_status"]
+
+
+def test_after_handover_the_same_question_is_asked_again():
+    from langgraph.types import Command
+
+    graph, config = _intake_graph("t-handover-1")
+    graph.invoke({}, config)
+    handed = graph.invoke(Command(resume={"answer": "I am answering for my mother"}), config)
+    assert "filing_status" not in handed["intake"]
+
+    graph2, config2 = _intake_graph("t-handover-2")
+    again = graph2.invoke(handed, config2)
+    assert again["__interrupt__"][0].value["fields"] == ["intake.filing_status"]
