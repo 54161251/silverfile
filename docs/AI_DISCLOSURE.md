@@ -37,7 +37,7 @@ in unit tests (R14). Items not yet verified by a person are listed below.
 |---|---|---|---|---|
 | P1 Kaiwen | OpenAI Codex | Contracts, graph, routing, persistence, interrupts, loop guards, README | Full suite runs; separate CLI processes for start and staff resume; review of P5's PRs | `kaiwen.md` |
 | P2 Jad | Claude Sonnet 5.5 | Tax tools, MCP server, Computation agent, golden returns, P2 docs | Suite run on Python 3.12; oracle cross-check; Oct 27 AI-assisted IRS-source and spreadsheet check of g01–g06. Independent human re-derivation not recorded | `jad.md` |
-| P3 Zimo | Claude Sonnet 5.5 (Claude app) | Intake questions, flags, go-back, summaries, direct-entry lines and API-key reader | Zimo records local full-suite runs and fixes; real batch token counts are committed in metrics.md. Introductory model/date placeholders still need cleanup | `zimo.md` |
+| P3 Zimo | Claude Sonnet 5.5; Claude Opus 5.5 for the October 30 fix (Claude app) | Intake questions, flags, go-back, summaries, direct-entry lines and API-key reader | Zimo records local full-suite runs and fixes; real batch token counts are committed in metrics.md. Model/date entries and the October 30 risk-handoff work are recorded in PR #55 | `zimo.md` |
 | P4 Christina | Claude Sonnet 5.5 | W-2 extraction, SSN rule, PII masking, fixtures, eval cases | Reviewed by P4; Ran the full test suite on Mac (352 passed), when test run failed on the dropped-digit problem, it was reported and fix was applied. | `christina.md` |
 | P5 Lluc | Claude Opus 5.5 | Rules agent, policy corpus, decision-table tests; Oct 26 integration fixes and spec 4.5 batch | Reviewed by P1; fixes checked to fail on old code and pass on new; end-to-end runs | `lluc.md` |
 | P6 Ziling | Claude Opus 5.5 | Review agent, CI, Docker, OCR dependencies | Checklist written and corrected by hand; both eval cases run in Docker with refunds matched | `ziling.md` |
@@ -47,7 +47,7 @@ in unit tests (R14). Items not yet verified by a person are listed below.
 
 - Golden returns re-derived in a spreadsheet by a person (P2, R12).
 - Actual API input-token counts for both strategies are now committed in `docs/metrics.md` (PR #44); retain the measurement method and distinguish these from offline estimates.
-- P3 and P4 logs are present. P3 records Claude Sonnet 5.5 in the disclosure paragraph, but introductory model/date placeholders remain; the author should resolve them.
+- P3 and P4 logs are present. P3 supplies the model/date entries and October 30 fix record in PR #55. Each member remains responsible for accurately recording personal review.
 - Intake risk handoffs were corrected in PRs #49 and #51; include them in the final-revision end-to-end checks.
 - Reconcile the final report and video disclosure with the actual assistance used.
 - Every member can explain their own code (R20).
