@@ -49,3 +49,12 @@ and distinguished recorded runs from final submission acceptance. A preceding au
 ran 399 tests and 610 subtests locally with 20 OCR skips; this documentation-only change
 uses link checks and `git diff --check`, without claiming a new Docker/OCR/API run.
 These are AI-assisted inspections, not a claim that Kaiwen independently re-derived tax results.
+
+## October 30, 2026 — report links and project presentation
+
+Codex reorganized README for project reviewers, removed internal submission reminders,
+and reconciled completed risk handoffs with TASKS and the combined disclosure. It read
+the committed seven-page report PDF and added a README link while recording its older
+snapshot claims for reconciliation. The separately supplied Google Doc could not be
+read because both the connector and browser denied access; no claim is made that its
+latest contents were reviewed. Local link and Markdown checks were used for these docs.

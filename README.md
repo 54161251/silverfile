@@ -8,6 +8,14 @@ and resume the same saved session.
 **Draft preparation only. SilverFile does not file returns or provide tax advice.** Use
 synthetic documents and test SSNs beginning with 900–999.
 
+## Project report
+
+[Read the system design report (PDF)](Extra%20Credit%20Report%20SilverFile.pdf).
+It covers the architecture, agent responsibilities, safety boundaries, failure modes
+and team contributions. The uploaded report describes an earlier project snapshot;
+current setup, input coverage and technical limitations are documented below, with
+updated measurements and AI-use records linked under evaluation evidence.
+
 ## System overview
 
 Six agents share validated state in a LangGraph workflow:
