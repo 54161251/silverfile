@@ -108,3 +108,32 @@ def test_metrics_page_lists_both_strategies_and_labels_estimates(tmp_path):
     text = batch.write_metrics(results, doc).read_text()
     assert "Not measured yet" in text and "These are estimates" in text
     assert text.count("| 10 (w2_batch_10) |") == 1
+
+
+def test_R5_offline_estimate_keeps_the_measured_table_already_on_the_page(tmp_path):
+    results, doc = tmp_path / "results", tmp_path / "metrics.md"
+    for strategy in ib.STRATEGIES:   # a real run: its raw files exist when the page is first written
+        rows = batch.run_batch(strategy, estimate=True, extract=fake_extract)
+        batch.save_run(strategy, rows, estimate=False, model="claude-test", results=results)
+    measured = batch.write_metrics(results, doc).read_text()
+    assert "Not measured yet" not in measured and "Model: claude-test." in measured
+    for path in results.glob("actual_*.json"):   # fresh clone: raw files are not in git
+        path.unlink()
+    rows = batch.run_batch("selective_recall", estimate=True, extract=fake_extract)
+    batch.save_run("selective_recall", rows, estimate=True, model=None, results=results)
+    after = batch.write_metrics(results, doc).read_text()
+    assert "Not measured yet" not in after
+    section = lambda text: text.split(batch.ACTUAL_HEADING)[1].split("\n## ")[0]
+    assert section(after) == section(measured) and "| 10 (w2_batch_10) |" in section(after)
+    assert "## Estimated input tokens (offline, no API call)" in after
+
+
+def test_R5_a_new_measured_run_replaces_the_kept_table(tmp_path):
+    results, doc = tmp_path / "results", tmp_path / "metrics.md"
+    for model in ("claude-old", "claude-new"):
+        for strategy in ib.STRATEGIES:
+            rows = batch.run_batch(strategy, estimate=True, extract=fake_extract)
+            batch.save_run(strategy, rows, estimate=False, model=model, results=results)
+        text = batch.write_metrics(results, doc).read_text()
+    assert "Model: claude-new." in text and "claude-old" not in text
+
