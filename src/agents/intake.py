@@ -630,6 +630,14 @@ def with_user_inputs(state: dict, intake: dict) -> dict:
     inputs.update(intake.get("other_amounts") or {})
     return inputs
 
+# Flags that must reach Rules (and a colleague) before Intake asks anything else.
+HANDOVER_FLAGS = (
+    ("advice_request", "E4"),
+    ("third_party_answering", "E6"),
+    ("out_of_scope_mention", "E1"),
+)
+
+
 def _run_interactive(state: dict) -> dict:
     intake = state.get("intake") or {}
     flags = list(state.get("flags") or [])
@@ -668,23 +676,21 @@ def _run_interactive(state: dict) -> dict:
         intake, flags = result["intake"], result["flags"]
         new = {f["type"] for f in flags[before:]}
 
-        if "advice_request" in new:
-            notice = ESCALATION_CATALOG["E4"]["user_message"]
-            continue
+        for flag_type, code in HANDOVER_FLAGS:
+            if flag_type in new:
+                # Return now so Rules and a colleague see this flag before any more
+                # questions. The unanswered question stays open and is asked again after.
+                return {"intake": intake, "flags": flags,
+                        "open_questions": [field_path(question)],
+                        "session_summary": ESCALATION_CATALOG[code]["user_message"]}
         if "ssn_volunteered" in new:
             notice = ("You don't need to share your Social Security number "
                       "right now, so I have not saved it.")
-            continue
-        if "third_party_answering" in new:
-            notice = ESCALATION_CATALOG["E6"]["user_message"]
             continue
         if "contradiction" in new:
             notice = ("No problem. Your earlier answers are safe. "
                       "Let's finish this question first, and a colleague "
                       "can fix anything that needs changing.")
-            continue
-        if "out_of_scope_mention" in new:
-            notice = ESCALATION_CATALOG["E1"]["user_message"]
             continue
         if intake.get("marital_status_unclear") and not intake.get("filing_status"):
             # Hand over now (no open questions) so Rules raises E5 for a colleague.
