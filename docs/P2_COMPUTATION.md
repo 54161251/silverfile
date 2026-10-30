@@ -68,7 +68,7 @@ set `REQUIRED_DIRECT_LINES = ("10", "26")` at the top of `computation.py`.
 - Unit tests (`unittest`, pytest-compatible). Golden numbers were derived by AI and cross-checked against `tests/oracle.py`, an independent reimplementation.
 - R12 (Oct 27): Claude (AI, not a human re-derivation) checked the parameters against Rev. Proc. 2024-40, Rev. Proc. 2025-32, Schedule 1-A and Pub. 915, recomputed g01, g02, g05 line 6b and g03 line 13b from the worksheet lines, and recomputed g01-g06 in an Excel workbook with 0 differences. See docs/ai_log/jad.md.
 - Mutation checks: changing a bracket rate fails 59 tests; dropping line 8 from the SS inputs fails the schedule-1 tests.
-- Not yet tested against the real `src/state.py` (a reconstruction was used), real Rules output, or a live LangGraph run.
+- Since written, Computation runs in the real graph with the real `src/state.py`, Rules and Review: both evaluation cases (`demo/eval_case_1.md`, `demo/eval_case_2.md`) reach `draft_ready` with the expected line 34 refunds (2,650 and 1,995), and an MFJ two-senior case matched a hand calculation (checked 2026-10-30). The golden unit tests themselves still use the golden state files, not the graph.
 
 ## Run
 ```

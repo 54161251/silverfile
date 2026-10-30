@@ -7,8 +7,8 @@ Tool: Claude (Sonnet 5.5, Claude Code session). Scope: P2 workstream only.
 - Looked up 2025 tax parameters (two independent web sources, plus the IRS Social Security worksheet).
 - Reconstructed `src/state.py` from the repo's web view to test against the Provenance contract.
 
-## What I (Jad) must do and have not yet recorded here
-- Re-derive each golden return in an independent spreadsheet (R12) and record the result below.
+## What I (Jad) must still do
+- Re-derive each golden return myself (R12). Claude's AI re-derivation is recorded under "Verification record" below; a human re-derivation has not been done.
 - Read every file before committing; run the tests on my own machine.
 
 ## Mistakes found in AI output (keep this honest)

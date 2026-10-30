@@ -35,8 +35,8 @@ in unit tests (R14). Items not yet verified by a person are listed below.
 | Member | Tool | What AI produced | Human verification recorded | Log |
 |---|---|---|---|---|
 | P1 Kaiwen | OpenAI Codex | Contracts, graph, routing, persistence, interrupts, loop guards, README | Full suite runs; separate CLI processes for start and staff resume; review of P5's PRs | `kaiwen.md` |
-| P2 Jad | Claude Sonnet 5.5 | Tax tools, MCP server, Computation agent, golden returns, P2 docs | Suite run on Python 3.12; oracle cross-check. Spreadsheet re-derivation (R12) still pending | `jad.md` |
-| P3 Zimo | — | Interactive Intake (questions, flags, go-back, summaries) | **No AI log yet** | missing |
+| P2 Jad | Claude Sonnet 5.5 | Tax tools, MCP server, Computation agent, golden returns, P2 docs | Suite run on Python 3.12; oracle cross-check. R12: checked by AI only (Claude, 2026-10-27); no human re-derivation recorded | `jad.md` |
+| P3 Zimo | Claude (model name not yet confirmed in the log) | Interactive Intake (questions, flags, go-back, summaries), taxpayer page, context metrics | Tests run by P3 on their own clone; **the log still contains `[CONFIRM MODEL NAME]` and `[CHECK DATE]` placeholders** | `zimo.md` |
 | P4 Christina | Claude Sonnet 5.5 | W-2 extraction, SSN rule, PII masking, fixtures, eval cases | Reviewed by P4; Ran the full test suite on Mac (352 passed), when test run failed on the dropped-digit problem, it was reported and fix was applied. | `christina.md` |
 | P5 Lluc | Claude Opus 5.5 | Rules agent, policy corpus, decision-table tests; Oct 26 integration fixes and spec 4.5 batch | Reviewed by P1; fixes checked to fail on old code and pass on new; end-to-end runs | `lluc.md` |
 | P6 Ziling | Claude Opus 5.5 | Review agent, CI, Docker, OCR dependencies | Checklist written and corrected by hand; both eval cases run in Docker with refunds matched | `ziling.md` |
@@ -44,7 +44,7 @@ in unit tests (R14). Items not yet verified by a person are listed below.
 
 ## Still to verify before submission
 
-- Golden returns re-derived in a spreadsheet by a person (P2, R12).
-- Actual API token counts for the spec 4.5 table (`docs/metrics.md` has offline estimates only).
-- P3's AI log and P4's review record.
+- Golden returns re-derived by a person (P2, R12). Today the record is an AI check only: Claude re-derived g01-g06 in a spreadsheet and against IRS sources on 2026-10-27 (see `docs/ai_log/jad.md`); no team member has re-derived them.
+- The spec 4.5 token table in `docs/metrics.md` holds measured API input tokens (10 documents, strategy on and off). A person should re-run `python run.py batch` with their own key to confirm; the raw run files are not in git.
+- P3's AI log placeholders (`[CONFIRM MODEL NAME]`, `[CHECK DATE]`) and P4's review record.
 - Every member can explain their own code (R20).

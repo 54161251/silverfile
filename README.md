@@ -2,7 +2,7 @@
 
 A shared workspace for the team's seven-person SilverFile project: six agents plus a dashboard/demo workstream.
 
-**Status checked October 25, 2026: orchestration, basic interactive Intake, Rules, Computation, Review, the staff dashboard, form rendering, CI and Docker configuration are present. Intake's remaining tax questions and production Extraction are still pending; a complete taxpayer-to-draft workflow is not yet demonstrated.**
+**Status checked October 30, 2026 (main at `117ce39`): all six agents run as real adapters. `python run.py start --input ...` takes both evaluation cases to `draft_ready` (case 2 after staff resolve E6), the full test suite passed locally (Python 3.12.15; CI uses 3.11), and goldens g01-g06 pass Review. Not demonstrated in this repo: the demo video and a Docker run by the person who last edited this page (see [Docker](#docker)). Read [Known limits](#known-limits) before relying on a return.**
 
 ## Current implementation
 
@@ -10,17 +10,17 @@ A shared workspace for the team's seven-person SilverFile project: six agents pl
 |---|---|---|---|
 | P1 — Kaiwen | Contracts, orchestration, checkpoints, interrupts, guards | Implemented; document correction/versioning needs integration | [P1 handoff](docs/IMPLEMENTATION_NOTES.md) |
 | P2 — Jad | Computation and deterministic MCP tools | Implemented; golden returns need human verification | [Computation](docs/P2_COMPUTATION.md) |
-| P3 — Zimo | Conversational Intake, memory and context metrics | Five-question interactive Intake connected; remaining questions, taxpayer page and metrics pending | [Intake integration](docs/P1_INTAKE_HANDOFF.md) |
-| P4 — Christina | W-2 image extraction, security and fixtures | Production adapter and assignment demo fixtures pending | [Tasks](TASKS.md) |
+| P3 — Zimo | Conversational Intake, memory and context metrics | Interactive Intake (core questions; optional "other amounts" questions, see Known limits), taxpayer page and context-strategy metrics implemented | [Intake integration](docs/P1_INTAKE_HANDOFF.md) |
+| P4 — Christina | W-2 image extraction, security and fixtures | Implemented: W-2 image OCR (Tesseract), SSN rule, PII masking, synthetic fixtures and eval inputs | [Tasks](TASKS.md) |
 | P5 — Lluc | Eligibility, Rules and escalations | Implemented | [Rules interface](docs/p5_rules_interface.md) |
-| P6 — Ziling | Review, CI and Docker | Implemented; full grader simulation pending | [Review](docs/P6_REVIEW.md) |
-| P7 — David | Staff dashboard, human resolution, HTML/PDF output | Implemented; final demo video pending | [Dashboard](docs/P7_DASHBOARD.md) |
+| P6 — Ziling | Review, CI and Docker | Implemented; grader simulation recorded in [P6_GRADER_SIM](docs/P6_GRADER_SIM.md) | [Review](docs/P6_REVIEW.md) |
+| P7 — David | Staff dashboard, human resolution, HTML/PDF output | Implemented; the demo video is not in this repo | [Dashboard](docs/P7_DASHBOARD.md) |
 
-“Implemented” describes a component, not acceptance of the complete application. The
-offline graph uses real interactive Intake and Rules, with placeholder Extraction,
-Computation and Review adapters; it does not calculate a tax return. The dashboard's
-**Sample returns** tab separately invokes real Computation on golden data. These are
-different demonstrations.
+“Implemented” describes a component, not acceptance of the complete application.
+`python run.py start --input ...` runs the real agents (production mode). `--demo` runs the
+routing skeleton with real Intake and Rules but placeholder Extraction, Computation and Review;
+it ends as `scaffold_complete` and calculates no tax. The dashboard's **Sample returns** tab
+separately invokes real Computation on golden data. These are different demonstrations.
 
 ## Start here
 
@@ -55,60 +55,108 @@ flowchart TD
   O -->|Loop limit reached| S[Stop for human review]
 ```
 
-The P1 routing topology is implemented; the offline demo still uses placeholder adapters for unfinished workstreams. Intake is the only agent that converses with the taxpayer; the orchestrator only routes work.
+The routing topology is implemented; only `--demo` uses placeholder adapters. Intake is the only agent that converses with the taxpayer; the orchestrator only routes work.
 
 ## Repository map
 
 | Location | Purpose |
 |---|---|
-| `src/agents/` | Basic interactive Intake, Rules, Computation and Review; Extraction pending |
+| `src/agents/` | Intake, Extraction, Rules, Computation and Review (plus Intake's document briefing) |
 | `src/graph.py`, `src/memory.py`, `src/state.py` | Routing, SQLite sessions and shared contracts |
-| `src/demo_agents.py` | Explicit offline placeholders, separate from production adapters |
+| `src/demo_agents.py` | Placeholders for `--demo` only, separate from production adapters |
 | `streamlit_app.py`, `src/dashboard/` | Staff UI, resolution, provenance and form rendering |
 | `src/tools/` | Deterministic MCP calculation tools |
 | `tests/golden/` | Synthetic computation cases; human cross-check still required |
-| `data/fixtures/`, `evals/` | Reserved for assignment fixtures and evaluation scenarios |
+| `data/fixtures/`, `evals/` | Synthetic W-2 images, the 10-document batch, evaluation case definitions and grader-simulation inputs |
 | `tests/` | Routing, reducer, calculation, and loop-guard tests |
-| `traces/` | Sanitized execution evidence |
+| `traces/` | Sanitized traces of both eval cases (rebuild: `python traces/make_traces.py`) |
 | `docs/` | Architecture, metrics, implementation notes, AI disclosure |
-| `demo/` | Current walkthroughs; final assignment cases and video pending |
-| `.github/workflows/ci.yml` | Python 3.11 tests and selected golden-return reviews |
+| `demo/` | Eval case walkthroughs and inputs, dashboard walkthrough |
+| `.github/workflows/ci.yml` | Python 3.11: full test suite, then Review of goldens g01-g06 |
 | `Dockerfile`, `docker-compose.yml` | Container setup and dashboard service |
 
 ## Running the project
 
-Use Python 3.11 (team target and CI configuration). Run the current tests in your own
-environment; do not treat a historical test count as the latest CI result.
+### Install
+
+Use Python 3.11 (team target and CI configuration; the suite also passed on 3.12.15). Reading
+W-2 images also needs the Tesseract OCR program, which pip cannot install: `brew install
+tesseract` (macOS), `sudo apt-get install tesseract-ocr` (Ubuntu), or the UB Mannheim installer
+(Windows). Without it the image tests are skipped and an image upload stops with an "OCR is not
+installed" error. The Docker image and CI already include it.
 
 ```sh
 python -m venv .venv
+source .venv/bin/activate          # Windows PowerShell: .venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
 ```
 
-Activate with `.venv\Scripts\Activate.ps1` on Windows PowerShell or `source .venv/bin/activate` on macOS/Linux. Then:
+### Run the tests
 
 ```sh
-python -m pip install -r requirements.txt
 python -m pytest -q
+for g in tests/golden/g0[1-6]_*.json; do python -m src.agents.review "$g" | head -1; done   # each prints "verdict: pass"
+```
+
+Do not treat a historical test count as the latest CI result; check the
+[Actions results](https://github.com/54161251/silverfile/actions).
+
+### Run the two evaluation cases (real adapters, no API key)
+
+Each case needs a new `--thread-id` (reusing one fails with "Cannot complete operation (ValueError)"). Sessions are
+saved in `runtime/sessions.sqlite` (or `--db` / `SILVERFILE_DB`). Full walkthroughs:
+[case 1](demo/eval_case_1.md), [case 2](demo/eval_case_2.md).
+
+```sh
+# Case 1: clean run, ends draft_ready, line 34 refund = 2,650
+python run.py start --input demo/eval_case_1_input.json --thread-id eval-case-1
+python run.py status --thread-id eval-case-1
+
+# Case 2: stops at E6 (awaiting_human), staff resolve, ends draft_ready, line 34 refund = 1,995
+python run.py start  --input demo/eval_case_2_input.json --thread-id eval-case-2
+python run.py status --thread-id eval-case-2
+python run.py resume --input demo/eval_case_2_resolution.json --thread-id eval-case-2
+python run.py status --thread-id eval-case-2
+```
+
+Case 2 can also be resolved in the dashboard (steps in `demo/eval_case_2.md`). To try your own
+W-2, make a synthetic image with `python data/generate_fixtures.py --custom my_w2.jpg --wages ...
+--withheld ... --ssn 900-11-2222 --name "Sam Placeholder"`, copy `demo/eval_case_1_input.json`,
+and point `source_file` at your image (see "Make your own clean case" in `demo/eval_case_1.md`).
+SSNs must be in the 900-999 test range; a W-2 showing any other SSN stops the session at E7.
+
+### Provide your own API key
+
+Tests, the eval cases and the dashboard need no key. Only `python run.py batch` (the spec 4.5
+token measurement) calls the model. The code looks for `ANTHROPIC_API_KEY` in this order:
+
+1. a real environment variable;
+2. `.env` (copy `.env.example` and fill in `ANTHROPIC_API_KEY=`);
+3. `api_key.txt` (copy `api_key.example.txt`, put the key on its own line).
+
+`.env` and `api_key.txt` are gitignored; never commit them. A blank value counts as missing.
+`SILVERFILE_MODEL` in `.env` chooses the model.
+
+```sh
+python run.py batch --no-context-strategy   # context strategy off: full history resent
+python run.py batch                         # context strategy on
+python run.py batch --estimate              # no key, no API call; estimates only (rewrites docs/metrics.md)
+```
+
+Without a key, `run.py batch` exits with "No API key found..." and does not print a traceback.
+Results are written to `docs/metrics.md`.
+
+### Offline routing demo
+
+```sh
 python run.py start --demo --thread-id first-demo
 ```
 
-Reading W-2 images (both eval cases in `demo/`) also needs the Tesseract OCR program,
-which pip cannot install: `brew install tesseract` (macOS), `sudo apt-get install
-tesseract-ocr` (Ubuntu), or the UB Mannheim installer (Windows). Without it the image
-tests are skipped and an image upload stops with an "OCR is not installed" error. The
-Docker image and CI already include it.
-
-The demo uses synthetic structured documents, real Intake and Rules, and placeholder
-Extraction/Computation/Review adapters. It ends as **scaffold_complete**, not a
-completed tax return. No API key is needed. See [persistent human-review walkthrough](demo/P1_WALKTHROUGH.md)
-and [integration handoff](docs/IMPLEMENTATION_NOTES.md).
-
-For the eventual production agents, each module exposes `run(state) -> dict` under
-`src/agents/`. `python run.py start --input path/to/synthetic-input.json` deliberately
-fails until the missing adapters are supplied. Runtime SQLite files live under ignored
-`runtime/`; use the same `--db` and `--thread-id` for resume. `SILVERFILE_DB` optionally
-sets the database path. P1 uses no API credentials; model configuration belongs to the
-agent owners.
+This uses synthetic structured documents, real Intake and Rules, and placeholder
+Extraction/Computation/Review adapters. It ends as **scaffold_complete**, not a completed tax
+return. See the [persistent human-review walkthrough](demo/P1_WALKTHROUGH.md) and
+[integration handoff](docs/IMPLEMENTATION_NOTES.md). Use the same `--db` and `--thread-id` to
+resume.
 
 ### Staff dashboard
 
@@ -147,25 +195,37 @@ docker compose run --rm silverfile python -m pytest -q
 docker compose down
 ```
 
-The P6 task update reports a successful macOS Docker run. This README update has not
-independently rerun Docker. CI configuration runs tests and reviews golden cases g01,
-g05 and g06; check the latest [Actions results](https://github.com/54161251/silverfile/actions)
-for actual outcomes. Cases g02–g04 still need 1099-R distribution-code fixture alignment.
+Docker was not re-run when this page was updated. P6 recorded a macOS Docker build and both
+eval cases run in the container ([P6_GRADER_SIM](docs/P6_GRADER_SIM.md)). To run a case in a
+running container: `docker compose exec silverfile python run.py start --input
+demo/eval_case_1_input.json --thread-id eval-case-1` (that exact command line was not run by the
+person who wrote this note). To give the container an API key, put it in `.env`; Compose passes
+`.env` into the container as environment variables (`env_file`) and does not copy it into the
+image. CI runs the full test suite and reviews goldens g01-g06 (g02-g04 now carry the 1099-R
+code and pass Review locally); check the
+[Actions results](https://github.com/54161251/silverfile/actions) for actual outcomes.
 
 ![P1 graph overview](docs/graph.png)
 
-## Integration and submission work still open
+## Known limits
 
-- Complete Intake's required tax questions and connect Extraction, the taxpayer page, Computation and Review in one workflow.
-- Define corrected-document replacement/versioning so corrections cannot double-count income.
-- Connect staff-entered 1099-R taxable amounts to Computation (E3); the dashboard alone is insufficient.
-- Move remaining income summation and direct-input rounding out of Computation into MCP tools.
-- Align the extraction confidence threshold across workstreams and repair incomplete golden fixtures.
-- Human-check golden returns; run clean and resolved-HITL cases through the real graph.
-- Complete context-token measurements, required W-2 images, traces, report, AI disclosure and video.
+- **Some lines are entered as 0 unless supplied.** Form 1040-SR lines 8, 10, 17, 19, 20, 23, 25c
+  and 26 default to 0 with kind `default_zero` (shown on the dashboard) when no value is given.
+  Intake asks for lines 8, 10, 17, 19, 20, 23 and 26 only when Computation names one as missing,
+  which it does not today, and never asks for 25c. A taxpayer with, say, estimated payments
+  (line 26) who is not asked can get a draft that **understates the refund**. Staff must check
+  these lines.
+- **Extraction reads W-2 images only.** 1099-INT, 1099-DIV, 1099-R and SSA-1099 values, and the
+  1099-R keys `ira_sep_simple` and `qcd_amount`, work through structured input only, not OCR.
+- Line 16 uses the rate schedule, not the qualified-dividend worksheet, so tax can differ from
+  commercial software (assumption A14). More limits: [docs/P2_COMPUTATION.md](docs/P2_COMPUTATION.md).
 
-These are integration tasks, not claims that all current component tests fail. See
-[TASKS.md](TASKS.md) and the linked owner notes for details and evidence.
+## Open submission work
+
+- Human re-derivation of the golden returns (R12): so far only AI-assisted checks are recorded.
+- Demo video, five-page report, and verifying setup on another teammate's machine.
+
+See [TASKS.md](TASKS.md) and the linked owner notes for details and evidence.
 
 ## Keeping this README current
 
