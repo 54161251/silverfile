@@ -42,6 +42,9 @@ Git history and linked workstream notes.
 6. [ ] **All owners: finish personal code review and AI-log cleanup.** P3's introductory model/date placeholders remain; do not invent personal verification.
 7. [ ] **P1: confirm grader access and submission.** Repository is private. Confirm access, final report/video locations, Canvas upload requirements, deadline and seven-person/P7 approval with the instructor.
 
+P2 records a fresh-clone setup check on one machine on October 30; a second-person
+setup check is still required.
+
 ### Verification limits
 
 Latest-main CI was successful at audit time. A fresh Windows Python 3.13 run against

@@ -190,6 +190,18 @@ the committed table; it did not make paid API calls or independently rerun the m
 
 ![P1 graph overview](docs/graph.png)
 
+## Input coverage and calculation limits
+
+- Image/PDF OCR reads W-2s. Other supported forms (1099-INT, 1099-DIV, 1099-R and
+  SSA-1099) currently require structured input; 1099-R `ira_sep_simple` and `qcd_amount`
+  are also structured fields.
+- Direct-entry lines default to zero when not supplied. Intake's optional questions for
+  lines 8, 10, 17, 19, 20, 23 and 26 are selected when Computation reports a missing path;
+  the current default-zero behavior can bypass those questions. Line 25c has no question.
+  Staff must check these amounts to avoid an incomplete draft or understated refund.
+- Qualified dividends use ordinary rates under assumption A14; see the P2 notes and
+  grader simulation for the resulting limitation.
+
 ## Integration and submission work still open
 
 1. **Fix Intake risk escalation:** on `117ce39`, “I am answering for my mother” causes
