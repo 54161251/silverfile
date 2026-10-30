@@ -40,8 +40,8 @@ here. (A21, spec §4.4.5.) The following always escalate as **E5** (filing-statu
 - A spouse died in 2025 or earlier (MFJ vs QSS vs Single needs a human).
 - Any claim of Qualifying Surviving Spouse (QSS).
 - Head of Household with no qualifying person.
-- Unclear marital status, including MFJ or MFS with no spouse details, or Single with
-  spouse details.
+- Unclear marital status, including Single with spouse details. (MFJ or MFS with no
+  spouse details yet is not ambiguous: Intake asks the spouse questions.)
 
 ## Line 12d box count
 

@@ -189,9 +189,8 @@ def _check_filing_status(intake: dict, d: _Decisions) -> str | None:
     if status == "hoh" and intake.get("hoh_qualifying_person") is not True:
         d.escalate("E5", "Head of household without a confirmed qualifying person",
                    ["intake.hoh_qualifying_person"], anchor, about_status=True)
-    if status in ("mfj", "mfs") and not spouse:
-        d.escalate("E5", "Married filing status without spouse details", ["intake.spouse"],
-                   anchor, about_status=True)
+    # MFJ/MFS with no spouse details yet is not ambiguous: the spouse questions are simply
+    # unanswered, so they go to `missing` below and Intake asks them.
     if status in ("single", "hoh") and spouse and not spouse.get("date_of_death"):
         d.escalate("E5", "Unmarried filing status with spouse details", ["intake.spouse"],
                    anchor, about_status=True)

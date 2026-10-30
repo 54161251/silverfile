@@ -258,14 +258,19 @@ def test_E4_advice_request_is_gate_and_keeps_scope():
     {"filing_status": "qss"},
     {"filing_status": "hoh", "spouse": None},
     {"marital_status_unclear": True},
-    {"spouse": None},
     {"filing_status": "single"},
-], ids=["spouse_died", "qss", "hoh_no_qualifying_person", "unclear", "mfj_no_spouse",
-        "single_with_spouse"])
+], ids=["spouse_died", "qss", "hoh_no_qualifying_person", "unclear", "single_with_spouse"])
 def test_E5_filing_status_ambiguity(changes):
     out = rules.run(make(**changes))
     assert "E5" in codes(out)
     assert out["filing_status_validated"] is None
+
+
+def test_married_without_spouse_details_asks_intake_instead_of_escalating():
+    # Rules can run mid-Intake (e.g. after "I'm not sure"), before the spouse questions are reached.
+    out = rules.run(make(spouse=None))
+    assert "E5" not in codes(out)
+    assert {"intake.spouse.birth_date", "intake.spouse.ssn"} <= set(out["eligibility"]["missing"])
 
 
 def test_E5_hoh_with_qualifying_person_is_fine():
