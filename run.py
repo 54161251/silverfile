@@ -35,7 +35,7 @@ def summary(snapshot):
 
 def batch(args):
     """Spec 4.5: the 10-document batch with the context strategy on or off (src/batch.py)."""
-    from src.agents.intake_briefing import BriefingFailed
+    from src.agents.intake_briefing import BriefingFailed, model_name
     from src.batch import run_batch, save_run, write_metrics
     from src.dashboard.auth import load_env_file
     load_env_file()  # SILVERFILE_MODEL, ANTHROPIC_API_KEY (R6); real environment variables win
@@ -52,7 +52,7 @@ def batch(args):
         rows = run_batch(strategy, client=client, estimate=args.estimate, session_id=args.thread_id)
     except BriefingFailed as exc:
         raise SystemExit(f"Batch stopped (E8): {exc}")
-    save_run(strategy, rows, estimate=args.estimate, model=os.getenv("SILVERFILE_MODEL"))
+    save_run(strategy, rows, estimate=args.estimate, model=model_name())
     print(f"{strategy}: " + ", ".join(f"{row['input_tokens']:,}" for row in rows))
     print(f"Updated {write_metrics()}")
 

@@ -95,9 +95,9 @@ def test_R6_model_and_fallback_come_from_environment(monkeypatch):
     monkeypatch.setenv("SILVERFILE_REFUSAL_FALLBACK", "")
     ib.brief(client, [{"role": "user", "content": "x"}])
     assert "fallbacks" not in client.beta.messages.requests[-1]
-    monkeypatch.delenv("SILVERFILE_MODEL")
-    with pytest.raises(ib.BriefingFailed):
-        ib.brief(client, [{"role": "user", "content": "x"}])
+    monkeypatch.delenv("SILVERFILE_MODEL")   # no longer an error: R18 default (see the R18 tests)
+    ib.brief(client, [{"role": "user", "content": "x"}])
+    assert client.beta.messages.requests[-1]["model"] == ib.DEFAULT_MODEL
 
 
 def test_metrics_page_lists_both_strategies_and_labels_estimates(tmp_path):
@@ -137,3 +137,31 @@ def test_R5_a_new_measured_run_replaces_the_kept_table(tmp_path):
         text = batch.write_metrics(results, doc).read_text()
     assert "Model: claude-new." in text and "claude-old" not in text
 
+
+def test_R18_no_model_variable_and_a_key_in_api_key_txt_uses_the_default_model(monkeypatch, tmp_path):
+    from src.api_key import load_api_key
+    monkeypatch.delenv("SILVERFILE_MODEL")
+    (tmp_path / "api_key.txt").write_text("# comment\nfake-key-for-test\n", encoding="utf-8")
+    environ = {}
+    assert load_api_key(environ, env_file=tmp_path / ".env", key_file=tmp_path / "api_key.txt")   # key found, no .env
+    assert "SILVERFILE_MODEL" not in environ
+    client = fake_client()
+    briefing, tokens = ib.brief(client, [{"role": "user", "content": "x"}])    # mocked client: no network (R14)
+    assert briefing.message and tokens > 0
+    assert client.beta.messages.requests[-1]["model"] == "claude-opus-5-5" == ib.DEFAULT_MODEL
+
+
+@pytest.mark.parametrize("blank", ["", "   "])
+def test_R18_an_empty_model_variable_also_means_the_default(monkeypatch, blank):
+    monkeypatch.setenv("SILVERFILE_MODEL", blank)
+    client = fake_client()
+    ib.brief(client, [{"role": "user", "content": "x"}])
+    assert client.beta.messages.requests[-1]["model"] == ib.DEFAULT_MODEL
+
+
+def test_R18_an_explicit_model_variable_still_wins(monkeypatch):
+    monkeypatch.setenv("SILVERFILE_MODEL", "claude-sonnet-5-5")
+    client = fake_client()
+    ib.brief(client, [{"role": "user", "content": "x"}])
+    assert client.beta.messages.requests[-1]["model"] == "claude-sonnet-5-5"
+    assert ib.model_name() == "claude-sonnet-5-5"

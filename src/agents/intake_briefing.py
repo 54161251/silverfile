@@ -13,7 +13,8 @@ Two ways to build the request for document N:
 The model sees only doc_id, form, boxes and unverified boxes: no flags or timestamps, and
 the SSN box is already masked by Extraction (R17). Output is parsed into DocumentBriefing
 (R8); a refusal or unparseable answer is retried once, then BriefingFailed (E8 for the caller).
-The model and the refusal fallback come from the environment (R6).
+The model comes from SILVERFILE_MODEL and defaults to DEFAULT_MODEL (R18, R6); the refusal
+fallback comes from the environment (R6).
 """
 from __future__ import annotations
 
@@ -25,6 +26,7 @@ from pathlib import Path
 from pydantic import BaseModel, Field, ValidationError
 
 PROMPT = (Path(__file__).resolve().parents[1] / "prompts" / "document_briefing.md").read_text(encoding="utf-8")
+DEFAULT_MODEL = "claude-opus-5-5"  # R18: used when SILVERFILE_MODEL is unset or empty
 STRATEGIES = ("selective_recall", "full_history")
 PENDING_SHOWN = 5  # keeps the summary bounded however many boxes are pending
 
@@ -82,12 +84,14 @@ def _input_tokens(usage) -> int:
                ("input_tokens", "cache_creation_input_tokens", "cache_read_input_tokens"))
 
 
+def model_name() -> str:
+    """SILVERFILE_MODEL if set and not blank, otherwise DEFAULT_MODEL."""
+    return (os.environ.get("SILVERFILE_MODEL") or "").strip() or DEFAULT_MODEL
+
+
 def brief(client, messages: list[dict]) -> tuple[DocumentBriefing, int]:
     """One briefing. Returns the parsed output and the input tokens the API reported."""
-    model = os.environ.get("SILVERFILE_MODEL")
-    if not model:
-        raise BriefingFailed("Set SILVERFILE_MODEL in .env (see .env.example)")
-    request = dict(model=model, max_tokens=4000, system=PROMPT, messages=messages,
+    request = dict(model=model_name(), max_tokens=4000, system=PROMPT, messages=messages,
                    output_format=DocumentBriefing, output_config={"effort": "low"})
     fallback = os.environ.get("SILVERFILE_REFUSAL_FALLBACK", "").strip()
     if fallback:
