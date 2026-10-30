@@ -10,9 +10,11 @@ synthetic documents and test SSNs beginning with 900–999.
 
 ## Project report
 
-[Read the system design report (PDF)](Extra%20Credit%20Report%20SilverFile.pdf).
-It covers the architecture, agent responsibilities, safety boundaries, failure modes
-and team contributions. The uploaded report describes an earlier project snapshot;
+[System design report (Google Docs)](https://docs.google.com/document/d/1I3Q8qCJq-R8rYF7ioCXAVgKd34_t4ra_ssrpvkP8DVI/edit) ·
+[Report PDF](Extra%20Credit%20Report%20SilverFile.pdf)
+
+The report covers the architecture, agent responsibilities, safety boundaries, failure modes
+and team contributions. The report describes an earlier project snapshot;
 current setup, input coverage and technical limitations are documented below, with
 updated measurements and AI-use records linked under evaluation evidence.
 

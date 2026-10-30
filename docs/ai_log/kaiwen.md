@@ -58,3 +58,9 @@ the committed seven-page report PDF and added a README link while recording its 
 snapshot claims for reconciliation. The separately supplied Google Doc could not be
 read because both the connector and browser denied access; no claim is made that its
 latest contents were reviewed. Local link and Markdown checks were used for these docs.
+
+Follow-up: after the user signed into the Cornell browser account, Codex read the
+Google Doc titled Report SilverFile v2 on October 30. README now links both that editable
+report and the committed PDF. TASKS identifies specific stale report paragraphs without
+claiming the report or code was modified to remove the underlying technical limitations.
+The Google Doc itself was not edited.
