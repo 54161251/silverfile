@@ -37,7 +37,7 @@ in unit tests (R14). Items not yet verified by a person are listed below.
 | P1 Kaiwen | OpenAI Codex | Contracts, graph, routing, persistence, interrupts, loop guards, README | Full suite runs; separate CLI processes for start and staff resume; review of P5's PRs | `kaiwen.md` |
 | P2 Jad | Claude Sonnet 5.5 | Tax tools, MCP server, Computation agent, golden returns, P2 docs | Suite run on Python 3.12; oracle cross-check. Spreadsheet re-derivation (R12) still pending | `jad.md` |
 | P3 Zimo | — | Interactive Intake (questions, flags, go-back, summaries) | **No AI log yet** | missing |
-| P4 Christina | Claude Sonnet 5.5 | W-2 extraction, SSN rule, PII masking, fixtures, eval cases | **Placeholder in log**: what was reviewed and run is not yet recorded | `christina.md` |
+| P4 Christina | Claude Sonnet 5.5 | W-2 extraction, SSN rule, PII masking, fixtures, eval cases | Reviewed by P4; Ran the full test suite on Mac (352 passed), when test run failed on the dropped-digit problem, it was reported and fix was applied. | `christina.md` |
 | P5 Lluc | Claude Opus 5.5 | Rules agent, policy corpus, decision-table tests; Oct 26 integration fixes and spec 4.5 batch | Reviewed by P1; fixes checked to fail on old code and pass on new; end-to-end runs | `lluc.md` |
 | P6 Ziling | Claude Opus 5.5 | Review agent, CI, Docker, OCR dependencies | Checklist written and corrected by hand; both eval cases run in Docker with refunds matched | `ziling.md` |
 | P7 David | Claude Opus 5.5 | Staff dashboard, taxpayer page, HTML and PDF form | App driven in a browser; seven AI mistakes recorded and fixed | `david.md` |
