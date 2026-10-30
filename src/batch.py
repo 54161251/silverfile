@@ -79,6 +79,30 @@ def _table(runs: dict) -> list[str]:
     return lines
 
 
+ACTUAL_HEADING = "## Actual input tokens (API usage)"
+
+
+def _kept_measured_section(doc: Path) -> list[str] | None:
+    """The measured section already in `doc`, so an offline run cannot erase real API numbers.
+
+    The raw run files live in the ignored runtime/ folder, so on a fresh clone only this page
+    still holds the measurements. Returns None when the page has none (or says "Not measured yet").
+    """
+    if not doc.is_file():
+        return None
+    lines = doc.read_text(encoding="utf-8").splitlines()
+    if ACTUAL_HEADING not in lines:
+        return None
+    start = lines.index(ACTUAL_HEADING) + 2
+    end = next((i for i in range(start, len(lines)) if lines[i].startswith("## ")), len(lines))
+    section = lines[start:end]
+    while section and not section[-1].strip():
+        section.pop()
+    if not section or any("Not measured yet" in line for line in section):
+        return None
+    return section
+
+
 def write_metrics(results: Path = RESULTS, doc: Path = METRICS_DOC) -> Path:
     runs = {}
     for path in sorted(results.glob("*.json")):
@@ -93,9 +117,12 @@ def write_metrics(results: Path = RESULTS, doc: Path = METRICS_DOC) -> Path:
            "- **Enabled** (default, D3 selective recall): the current document plus a code-built "
            "summary of session decisions that does not grow with the number of documents.", ""]
     actual = runs.get("actual")
-    out.append("## Actual input tokens (API usage)")
+    out.append(ACTUAL_HEADING)
     out.append("")
-    if actual:
+    kept = None if actual else _kept_measured_section(doc)
+    if kept:
+        out += kept
+    elif actual:
         models = sorted({r["model"] for r in actual.values() if r.get("model")})
         out.append(f"Reported by the API as `usage.input_tokens` plus cache tokens. Model: "
                    f"{', '.join(models) or 'not recorded'}.")
