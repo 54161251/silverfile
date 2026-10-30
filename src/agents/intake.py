@@ -635,6 +635,7 @@ HANDOVER_FLAGS = (
     ("advice_request", "E4"),
     ("third_party_answering", "E6"),
     ("out_of_scope_mention", "E1"),
+    ("contradiction", "E2"),
 )
 
 
@@ -686,11 +687,6 @@ def _run_interactive(state: dict) -> dict:
         if "ssn_volunteered" in new:
             notice = ("You don't need to share your Social Security number "
                       "right now, so I have not saved it.")
-            continue
-        if "contradiction" in new:
-            notice = ("No problem. Your earlier answers are safe. "
-                      "Let's finish this question first, and a colleague "
-                      "can fix anything that needs changing.")
             continue
         if intake.get("marital_status_unclear") and not intake.get("filing_status"):
             # Hand over now (no open questions) so Rules raises E5 for a colleague.

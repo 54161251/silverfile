@@ -549,3 +549,14 @@ def test_after_handover_the_same_question_is_asked_again():
     graph2, config2 = _intake_graph("t-handover-2")
     again = graph2.invoke(handed, config2)
     assert again["__interrupt__"][0].value["fields"] == ["intake.filing_status"]
+
+
+def test_contradiction_hands_over_before_more_questions():
+    from langgraph.types import Command
+
+    graph, config = _intake_graph("t-handover-contra")
+    graph.invoke({}, config)
+    second = graph.invoke(Command(resume={"answer": "sorry, I meant single"}), config)
+    assert "__interrupt__" not in second
+    assert "contradiction" in [f["type"] for f in second["flags"]]
+    assert second["open_questions"] == ["intake.filing_status"]
