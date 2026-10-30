@@ -4,6 +4,7 @@
 .env
 .env.*
 !.env.example
+api_key.txt
 **/__pycache__
 *.py[cod]
 .pytest_cache

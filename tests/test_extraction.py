@@ -159,6 +159,44 @@ def test_contract_document_matches_p1_format_and_marks_uncertain_boxes():
     assert validate_update("extraction", {"documents": [doc]})["documents"][0]["doc_id"] == "w2_9"
 
 
+def uncertain_ssn_record(status="unreadable"):
+    """Both W-2 amounts read cleanly; only the SSN is read at confidence 0.5 (the graders' own-W-2 case)."""
+    base = make_record()
+    fields = {"1": base.fields["1"].model_copy(update={"value": Decimal("31250.00")}),
+              "2": base.fields["1"].model_copy(update={"box": "2", "value": Decimal("3400.00")})}
+    ssn = SsnReading(status=status, masked="***-**-****" if status != "accepted" else "***-**-4567", confidence=0.5,
+                      provenance=base.ssn.provenance)
+    return make_record(doc_id="w2_1", fields=fields, ssn=ssn)
+
+
+@pytest.mark.parametrize("status", ["unreadable", "accepted"])   # OCR disagreement / a correct but unconfident read
+def test_P7_an_unconfident_ssn_read_is_marked_unverified_below_the_threshold(status):
+    """Review check P7 fails any box under the threshold that is not listed as unverified."""
+    doc = contract.to_extracted_document(uncertain_ssn_record(status))
+    ExtractedDocument.model_validate(doc)
+    assert doc["unverified"] == ["a"] and not contains_raw_ssn(doc)
+    assert doc["confidence"]["a"] < CONFIDENCE_THRESHOLD
+    review = pytest.importorskip("src.agents.review")
+    findings = review.review_return({"documents": [doc], "lines": {}, "escalations": [], "user_inputs": {}})
+    assert not any(f["check"] == "P7" for f in findings["review_findings"])
+
+
+def test_E10_an_unconfident_ssn_read_no_longer_loops_review_back_to_extraction(tmp_path):
+    """Before the fix this session ended in E10 ('Repeated handoff cycle') instead of a draft."""
+    pytest.importorskip("langgraph")
+    from run import production_adapters
+    from src.memory import open_sessions
+    agents = production_adapters()
+    agents["extraction"] = lambda state: {"documents": [contract.to_extracted_document(uncertain_ssn_record())]}
+    inputs = json.loads((REPO / "demo" / "eval_case_1_input.json").read_text(encoding="utf-8"))
+    with open_sessions(tmp_path / "ssn.db", agents) as sessions:
+        sessions.start("ssn-half-confident", inputs)
+        values = sessions.snapshot("ssn-half-confident").values
+    assert values["status"] == "draft_ready"
+    assert [e["code"] for e in values["escalations"]] == []
+    assert values["review_verdict"] == "pass" and values["lines"]["34"]["value"] == 2650
+
+
 def test_every_unverified_box_has_confidence_below_the_threshold():
     """P6's Review agent (check P7) fails a box under 0.8 that is not unverified, and we keep the reverse true too."""
     record = make_record()

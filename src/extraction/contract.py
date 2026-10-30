@@ -68,6 +68,9 @@ def to_extracted_document(record: W2Record, sha256: str | None = None) -> dict:
         confidence[SSN_BOX] = min(round(record.ssn.confidence, 3), 1.0)
         if record.ssn.status not in ("accepted",):
             flags.append(f"ssn_{record.ssn.status}")
+        if record.ssn.status in ("uncertain", "unreadable") or confidence[SSN_BOX] < CONFIDENCE_THRESHOLD:
+            unverified.append(SSN_BOX)  # Review P7: a box below the threshold must be listed
+            confidence[SSN_BOX] = min(confidence[SSN_BOX], _CAP_FOR_UNVERIFIED)
     flags += [f for f in record.flags if f not in flags]
 
     document = {
