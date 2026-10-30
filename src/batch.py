@@ -130,7 +130,7 @@ def write_metrics(results: Path = RESULTS, doc: Path = METRICS_DOC) -> Path:
         out += _table(actual)
     else:
         out.append("Not measured yet: run both commands with a key in `.env` "
-                   "(`SILVERFILE_MODEL`, `ANTHROPIC_API_KEY`).")
+                   "(`ANTHROPIC_API_KEY`; `SILVERFILE_MODEL` is optional).")
     if runs.get("estimated"):
         out += ["", "## Estimated input tokens (offline, no API call)", "",
                 "Characters / 4, including the system prompt; earlier briefings replaced by a "
