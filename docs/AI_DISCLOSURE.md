@@ -6,7 +6,7 @@ a placeholder, this page says so rather than filling it in. P2 owns the final ve
 ## Disclosure
 
 AI wrote most of SilverFile's code, tests and documentation, and the team's work was
-mainly specifying, reviewing, running and correcting it. Four tools were used: OpenAI
+mainly specifying, reviewing, running and correcting it. Recorded AI assistance included: OpenAI
 Codex (repository scaffold, and P1's shared contracts, LangGraph routing, SQLite
 persistence, interrupts and loop guards), Claude Opus 5.5 in Claude Code or the Claude
 app (P5 Rules agent and policy corpus, P6 Review agent, CI and Docker, P7 staff dashboard,
@@ -25,8 +25,9 @@ a preselected session-closing option on the staff page (P7, by testing the outpu
 NumPy version that would not install on Python 3.11 (P6). End-to-end testing on October 26
 found integration bugs that each component's own tests had missed, such as extraction
 being skipped after an early flag, producing a $0-wage draft that Review passed; these were
-fixed with regression tests. No tax figure in the repository comes from a model: every
-dollar amount is produced by deterministic MCP tools, and the one runtime model call
+fixed with regression tests. Runtime tax calculations use deterministic MCP tools; document and direct-entry
+amounts come from inputs. AI helped draft the formulas, fixtures and golden expectations,
+so deterministic execution alone does not establish correctness. The one runtime model call
 (Intake's plain-language document briefing, spec 4.5) does no arithmetic and is mocked
 in unit tests (R14). Items not yet verified by a person are listed below.
 
@@ -35,8 +36,8 @@ in unit tests (R14). Items not yet verified by a person are listed below.
 | Member | Tool | What AI produced | Human verification recorded | Log |
 |---|---|---|---|---|
 | P1 Kaiwen | OpenAI Codex | Contracts, graph, routing, persistence, interrupts, loop guards, README | Full suite runs; separate CLI processes for start and staff resume; review of P5's PRs | `kaiwen.md` |
-| P2 Jad | Claude Sonnet 5.5 | Tax tools, MCP server, Computation agent, golden returns, P2 docs | Suite run on Python 3.12; oracle cross-check. Spreadsheet re-derivation (R12) still pending | `jad.md` |
-| P3 Zimo | — | Interactive Intake (questions, flags, go-back, summaries) | **No AI log yet** | missing |
+| P2 Jad | Claude Sonnet 5.5 | Tax tools, MCP server, Computation agent, golden returns, P2 docs | Suite run on Python 3.12; oracle cross-check; Oct 27 AI-assisted IRS-source and spreadsheet check of g01–g06. Independent human re-derivation not recorded | `jad.md` |
+| P3 Zimo | Claude Sonnet 5.5 (Claude app) | Intake questions, flags, go-back, summaries, direct-entry lines and API-key reader | Zimo records local full-suite runs and fixes; real batch token counts are committed in metrics.md. Introductory model/date placeholders still need cleanup | `zimo.md` |
 | P4 Christina | Claude Sonnet 5.5 | W-2 extraction, SSN rule, PII masking, fixtures, eval cases | Reviewed by P4; Ran the full test suite on Mac (352 passed), when test run failed on the dropped-digit problem, it was reported and fix was applied. | `christina.md` |
 | P5 Lluc | Claude Opus 5.5 | Rules agent, policy corpus, decision-table tests; Oct 26 integration fixes and spec 4.5 batch | Reviewed by P1; fixes checked to fail on old code and pass on new; end-to-end runs | `lluc.md` |
 | P6 Ziling | Claude Opus 5.5 | Review agent, CI, Docker, OCR dependencies | Checklist written and corrected by hand; both eval cases run in Docker with refunds matched | `ziling.md` |
@@ -45,6 +46,8 @@ in unit tests (R14). Items not yet verified by a person are listed below.
 ## Still to verify before submission
 
 - Golden returns re-derived in a spreadsheet by a person (P2, R12).
-- Actual API token counts for the spec 4.5 table (`docs/metrics.md` has offline estimates only).
-- P3's AI log and P4's review record.
+- Actual API input-token counts for both strategies are now committed in `docs/metrics.md` (PR #44); retain the measurement method and distinguish these from offline estimates.
+- P3 and P4 logs are present. P3 records Claude Sonnet 5.5 in the disclosure paragraph, but introductory model/date placeholders remain; the author should resolve them.
+- Fix and retest the current Intake risk-flag handoff; broad component test success has not prevented this integration defect.
+- Reconcile the final report and video disclosure with the actual assistance used.
 - Every member can explain their own code (R20).

@@ -2,25 +2,25 @@
 
 A shared workspace for the team's seven-person SilverFile project: six agents plus a dashboard/demo workstream.
 
-**Status checked October 25, 2026: orchestration, basic interactive Intake, Rules, Computation, Review, the staff dashboard, form rendering, CI and Docker configuration are present. Intake's remaining tax questions and production Extraction are still pending; a complete taxpayer-to-draft workflow is not yet demonstrated.**
+**Status checked October 30, 2026 against main `117ce39`: all six agent modules, the taxpayer page, W-2 upload, staff dashboard, form output, CI and Docker configuration are present. Real API context-token measurements and sanitized evaluation traces are committed. Submission is not yet signed off: the Intake risk-flag handoff still needs a fix and final image-based regression checks.**
 
 ## Current implementation
 
 | Owner | Component | Current state | Details |
 |---|---|---|---|
-| P1 — Kaiwen | Contracts, orchestration, checkpoints, interrupts, guards | Implemented; document correction/versioning needs integration | [P1 handoff](docs/IMPLEMENTATION_NOTES.md) |
-| P2 — Jad | Computation and deterministic MCP tools | Implemented; golden returns need human verification | [Computation](docs/P2_COMPUTATION.md) |
-| P3 — Zimo | Conversational Intake, memory and context metrics | Five-question interactive Intake connected; remaining questions, taxpayer page and metrics pending | [Intake integration](docs/P1_INTAKE_HANDOFF.md) |
-| P4 — Christina | W-2 image extraction, security and fixtures | Production adapter and assignment demo fixtures pending | [Tasks](TASKS.md) |
-| P5 — Lluc | Eligibility, Rules and escalations | Implemented | [Rules interface](docs/p5_rules_interface.md) |
-| P6 — Ziling | Review, CI and Docker | Implemented; full grader simulation pending | [Review](docs/P6_REVIEW.md) |
-| P7 — David | Staff dashboard, human resolution, HTML/PDF output | Implemented; final demo video pending | [Dashboard](docs/P7_DASHBOARD.md) |
+| P1 — Kaiwen | Orchestration, shared contracts, persistence, interrupts and guards | Implemented; corrected-document replacement remains open | [P1 handoff](docs/IMPLEMENTATION_NOTES.md) |
+| P2 — Jad | Computation and deterministic MCP tools | Implemented; staff box overrides and tool-based summation/rounding connected; independent human golden re-derivation remains open | [Computation](docs/P2_COMPUTATION.md) |
+| P3 — Zimo | Intake, summaries and context metrics | Expanded questions and direct-entry lines connected; real token counts recorded; risk flags can remain inside Intake instead of reaching Rules | [Metrics](docs/metrics.md) |
+| P4 — Christina | W-2 OCR, security and fixtures | Tesseract extraction, synthetic W-2s, ten-document household batch and eval fixtures merged | [Extraction](docs/P4_EXTRACTION_SECURITY.md) |
+| P5 — Lluc | Rules and escalations | Implemented, including unreadable-document and low-confidence checks | [Rules interface](docs/p5_rules_interface.md) |
+| P6 — Ziling | Review, CI, Docker and evaluation evidence | Golden cases g01–g06 reviewed in CI; traces and grader simulation recorded; final-revision rerun still needed | [Grader simulation](docs/P6_GRADER_SIM.md) |
+| P7 — David | Taxpayer uploads, staff resolution and HTML/PDF output | Implemented; final video and final report delivery links still need confirmation | [Dashboard](docs/P7_DASHBOARD.md) |
 
-“Implemented” describes a component, not acceptance of the complete application. The
-offline graph uses real interactive Intake and Rules, with placeholder Extraction,
-Computation and Review adapters; it does not calculate a tax return. The dashboard's
-**Sample returns** tab separately invokes real Computation on golden data. These are
-different demonstrations.
+Production mode loads real Intake, Extraction, Rules, Computation and Review agents. The
+`--demo` mode deliberately uses placeholder Extraction/Computation/Review adapters and
+ends as `scaffold_complete`; it does not calculate a return. Dashboard sample returns
+are a separate Computation preview. Use the production evaluation commands below to
+check the actual graph.
 
 ## Start here
 
@@ -55,23 +55,23 @@ flowchart TD
   O -->|Loop limit reached| S[Stop for human review]
 ```
 
-The P1 routing topology is implemented; the offline demo still uses placeholder adapters for unfinished workstreams. Intake is the only agent that converses with the taxpayer; the orchestrator only routes work.
+The routing topology and production adapters are implemented; the offline demo retains explicit placeholder adapters. Intake is the only agent that converses with the taxpayer; the orchestrator only routes work.
 
 ## Repository map
 
 | Location | Purpose |
 |---|---|
-| `src/agents/` | Basic interactive Intake, Rules, Computation and Review; Extraction pending |
+| `src/agents/` | Intake, Extraction, Rules, Computation and Review; document briefing for the batch command |
 | `src/graph.py`, `src/memory.py`, `src/state.py` | Routing, SQLite sessions and shared contracts |
 | `src/demo_agents.py` | Explicit offline placeholders, separate from production adapters |
 | `streamlit_app.py`, `src/dashboard/` | Staff UI, resolution, provenance and form rendering |
 | `src/tools/` | Deterministic MCP calculation tools |
 | `tests/golden/` | Synthetic computation cases; human cross-check still required |
-| `data/fixtures/`, `evals/` | Reserved for assignment fixtures and evaluation scenarios |
+| `data/fixtures/`, `evals/` | Synthetic W-2 images, a ten-document household batch and evaluation scenarios |
 | `tests/` | Routing, reducer, calculation, and loop-guard tests |
 | `traces/` | Sanitized execution evidence |
 | `docs/` | Architecture, metrics, implementation notes, AI disclosure |
-| `demo/` | Current walkthroughs; final assignment cases and video pending |
+| `demo/` | Evaluation inputs and walkthroughs; final video link not yet confirmed |
 | `.github/workflows/ci.yml` | Python 3.11 tests and selected golden-return reviews |
 | `Dockerfile`, `docker-compose.yml` | Container setup and dashboard service |
 
@@ -103,9 +103,19 @@ Extraction/Computation/Review adapters. It ends as **scaffold_complete**, not a
 completed tax return. No API key is needed. See [persistent human-review walkthrough](demo/P1_WALKTHROUGH.md)
 and [integration handoff](docs/IMPLEMENTATION_NOTES.md).
 
-For the eventual production agents, each module exposes `run(state) -> dict` under
-`src/agents/`. `python run.py start --input path/to/synthetic-input.json` deliberately
-fails until the missing adapters are supplied. Runtime SQLite files live under ignored
+Production adapters are under `src/agents/`: Intake uses `run_interactive(state)`;
+the other specialists use `run(state)`. To run the real graph with W-2 images:
+
+```sh
+python run.py start --input demo/eval_case_1_input.json --thread-id eval-clean
+python run.py status --thread-id eval-clean
+python run.py start --input demo/eval_case_2_input.json --thread-id eval-hitl
+python run.py resume --thread-id eval-hitl --input demo/eval_case_2_resolution.json
+```
+
+Use a fresh thread ID for each new run. The second case should pause at E6 before staff
+resolution. See the [clean case](demo/eval_case_1.md) and
+[human-review case](demo/eval_case_2.md) for recorded expected results. Runtime SQLite files live under ignored
 `runtime/`; use the same `--db` and `--thread-id` for resume. `SILVERFILE_DB` optionally
 sets the database path. P1 uses no API credentials; model configuration belongs to the
 agent owners.
@@ -126,8 +136,10 @@ an escalation; without them, the dashboard is read-only. The CLI and dashboard m
 the same database. Set `SILVERFILE_DB` in the shell for CLI commands if changing the
 default; the Streamlit entry point also loads `.env`.
 
-Use **Sample returns** for computed HTML/PDF previews. Demo sessions remain routing
-examples and show no computed form lines. See [dashboard walkthrough](demo/P7_DASHBOARD_WALKTHROUGH.md).
+Use **Sample returns** for separate computed HTML/PDF previews. Production sessions
+show the actual graph results once draft-ready. Demo sessions remain routing examples
+and show no computed form lines. The taxpayer page supports W-2 image/PDF upload and
+one-question-at-a-time answers. See [dashboard walkthrough](demo/P7_DASHBOARD_WALKTHROUGH.md).
 
 ### Docker
 
@@ -147,25 +159,60 @@ docker compose run --rm silverfile python -m pytest -q
 docker compose down
 ```
 
-The P6 task update reports a successful macOS Docker run. This README update has not
-independently rerun Docker. CI configuration runs tests and reviews golden cases g01,
-g05 and g06; check the latest [Actions results](https://github.com/54161251/silverfile/actions)
-for actual outcomes. Cases g02–g04 still need 1099-R distribution-code fixture alignment.
+P6 records Docker evaluation runs and grader-created cases in
+[the grader simulation](docs/P6_GRADER_SIM.md). The entrypoint currently seeds `--demo`
+routing examples, not the completed production evaluation cases. Run the production
+commands above inside the container when verifying image-to-draft behavior.
+
+CI installs Tesseract, runs the full suite on Python 3.11, and computes/reviews golden
+cases g01–g06. Check [Actions](https://github.com/54161251/silverfile/actions) for the
+current result. A local October 30 run against `117ce39` passed 399 tests and 610 subtests;
+20 OCR-dependent tests were skipped because this Windows host has no Tesseract. That
+run does not establish local OCR coverage or a new Docker verification.
+
+## Context-window measurements
+
+[The metrics table](docs/metrics.md) now records actual API input-token counts for both
+strategies on ten W-2s for one household. At document ten, full-history input was 3,031
+tokens and selective recall was 1,040. Offline estimates are labeled separately.
+
+```sh
+python run.py batch --no-context-strategy
+python run.py batch
+```
+
+These commands need Tesseract and a model API key. Set `ANTHROPIC_API_KEY` in the
+environment or local `.env`, or put it in the ignored `api_key.txt` file. Environment
+values take priority. Set `SILVERFILE_MODEL` in the environment or `.env`. Never commit
+credentials. `--estimate` avoids the API call but still extracts the batch images.
+The ordinary graph and tests need no model key. This documentation update inspected
+the committed table; it did not make paid API calls or independently rerun the measurements.
 
 ![P1 graph overview](docs/graph.png)
 
 ## Integration and submission work still open
 
-- Complete Intake's required tax questions and connect Extraction, the taxpayer page, Computation and Review in one workflow.
-- Define corrected-document replacement/versioning so corrections cannot double-count income.
-- Connect staff-entered 1099-R taxable amounts to Computation (E3); the dashboard alone is insufficient.
-- Move remaining income summation and direct-input rounding out of Computation into MCP tools.
-- Align the extraction confidence threshold across workstreams and repair incomplete golden fixtures.
-- Human-check golden returns; run clean and resolved-HITL cases through the real graph.
-- Complete context-token measurements, required W-2 images, traces, report, AI disclosure and video.
+1. **Fix Intake risk escalation:** on `117ce39`, “I am answering for my mother” causes
+   another Intake interrupt with no saved flag or escalation. Return new risk flags to
+   the graph promptly so Rules can act; add a graph-level regression test.
+2. Rerun both image-based production scenarios and a new input on the final revision
+   after the fix, including durable staff resume and displayed return/provenance.
+3. Define corrected-document replacement/versioning so replacing an upload cannot
+   double-count it. Skipping already-extracted IDs prevents reread conflicts but does
+   not implement replacement semantics.
+4. Keep the qualified-dividend limitation explicit: current calculations use ordinary
+   rates rather than the qualified-dividend/capital-gain worksheet. See the grader
+   simulation and P2 notes. Golden spreadsheet/source checking was AI-assisted;
+   independent human re-derivation is not recorded.
+5. Confirm delivery of the final report and 5–10 minute video, grader access to this
+   private repository, Canvas submission requirements, and seven-person team approval.
+   These may be handled outside GitHub; repository evidence does not confirm them.
+6. Finish personal review records and remaining placeholders in AI logs. The P3 and P4
+   logs are present; the combined [AI disclosure](docs/AI_DISCLOSURE.md) describes their
+   recorded work and remaining limits.
 
-These are integration tasks, not claims that all current component tests fail. See
-[TASKS.md](TASKS.md) and the linked owner notes for details and evidence.
+Recorded evidence is in [traces](traces/), [grader simulation](docs/P6_GRADER_SIM.md),
+and [metrics](docs/metrics.md). Historical runs are not a final-revision sign-off.
 
 ## Keeping this README current
 
