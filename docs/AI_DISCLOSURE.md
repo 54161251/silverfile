@@ -48,6 +48,6 @@ in unit tests (R14). Items not yet verified by a person are listed below.
 - Golden returns re-derived in a spreadsheet by a person (P2, R12).
 - Actual API input-token counts for both strategies are now committed in `docs/metrics.md` (PR #44); retain the measurement method and distinguish these from offline estimates.
 - P3 and P4 logs are present. P3 records Claude Sonnet 5.5 in the disclosure paragraph, but introductory model/date placeholders remain; the author should resolve them.
-- Fix and retest the current Intake risk-flag handoff; broad component test success has not prevented this integration defect.
+- Intake risk handoffs were corrected in PRs #49 and #51; include them in the final-revision end-to-end checks.
 - Reconcile the final report and video disclosure with the actual assistance used.
 - Every member can explain their own code (R20).
