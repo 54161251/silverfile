@@ -14,10 +14,9 @@ synthetic documents and test SSNs beginning with 900–999.
 [Report PDF](Extra%20Credit%20Report%20SilverFile.pdf)
 
 The report covers the architecture, agent responsibilities, safety boundaries, failure modes
-and team contributions. The report describes an earlier project snapshot;
-current setup, input coverage and technical limitations are documented below, with
-updated measurements and AI-use records linked under evaluation evidence. The report
-and its PDF are maintained separately; updating this README does not update either file.
+and team contributions. The repository PDF was exported from the linked Google Doc on
+October 31, 2026. Later edits to the Google Doc require a new PDF export. Current setup,
+measurements, AI-use records and technical limitations are linked below.
 
 ## System overview
 
