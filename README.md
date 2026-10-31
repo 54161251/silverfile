@@ -14,9 +14,9 @@ synthetic documents and test SSNs beginning with 900–999.
 [Report PDF](Extra%20Credit%20Report%20SilverFile.pdf)
 
 The report covers the architecture, agent responsibilities, safety boundaries, failure modes
-and team contributions. The report describes an earlier project snapshot;
-current setup, input coverage and technical limitations are documented below, with
-updated measurements and AI-use records linked under evaluation evidence.
+and team contributions. The repository PDF was exported from the linked Google Doc on
+October 31, 2026. Later edits to the Google Doc require a new PDF export. Current setup,
+measurements, AI-use records and technical limitations are linked below.
 
 ## System overview
 
@@ -34,7 +34,9 @@ Six agents share validated state in a LangGraph workflow:
 Extraction workers process uploads in parallel; a reducer combines their records.
 SQLite checkpoints support taxpayer continuation and staff interrupt/resume. The
 Streamlit app includes taxpayer upload/questions, a staff queue, return details, and
-HTML/PDF output with provenance.
+HTML/PDF output with provenance. Advice requests, third-party answers, out-of-scope
+mentions and contradictions return from Intake to Rules before another taxpayer
+question, allowing the corresponding staff escalation.
 
 ```mermaid
 flowchart TD
@@ -52,6 +54,11 @@ flowchart TD
   O -->|Escalation| H[Staff interrupt]
   H -->|Validated resolution| O
 ```
+
+Intake includes optional direct-entry questions
+and maps supported missing amount paths from Computation. Actual context-token
+measurements and all seven individual AI logs are present in the repository. The
+default-zero limitation below still applies.
 
 See [architecture](docs/ARCHITECTURE.md) and [implementation notes](docs/IMPLEMENTATION_NOTES.md)
 for state contracts, routing and persistence.
@@ -167,6 +174,12 @@ python -m pytest -q
 the full suite on Python 3.11, and computes/reviews golden cases g01–g06. Without a
 local OCR engine, image-dependent tests are skipped; check the reported skips when
 interpreting local results.
+
+Recorded check on **October 31, 2026**, against code revision `87c67e9`:
+latest-main CI passed; the local Python 3.13 run passed **411 tests and 610 subtests**,
+with **20 OCR-dependent skips** because Tesseract is absent on that host. This is not
+an image-based or Docker run. Earlier image/Docker results are recorded in the grader
+simulation; the final interactive walkthrough remains a separate check.
 
 - [Evaluation traces](traces/): sanitized checkpoints, routing, staff decisions and final lines.
 - [Grader simulation](docs/P6_GRADER_SIM.md): both evaluation cases and additional synthetic inputs.
