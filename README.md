@@ -56,7 +56,7 @@ flowchart TD
   H -->|Validated resolution| O
 ```
 
-For report corrections, note that Intake now contains optional direct-entry questions
+Intake includes optional direct-entry questions
 and maps supported missing amount paths from Computation. Actual context-token
 measurements and all seven individual AI logs are present in the repository. The
 default-zero limitation below still applies.
