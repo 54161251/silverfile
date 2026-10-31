@@ -20,6 +20,8 @@ measurements, AI-use records and technical limitations are linked below.
 
 ## System overview
 
+![SilverFile workflow overview](docs/graph.png)
+
 Six agents share validated state in a LangGraph workflow:
 
 | Agent | Responsibility |
@@ -40,7 +42,9 @@ question, allowing the corresponding staff escalation.
 
 ```mermaid
 flowchart TD
-  I[Intake] --> O[Orchestrator]
+  S[Session start] --> O[Orchestrator]
+  O --> I[Intake]
+  I --> O
   O -->|Documents ready| X[Parallel Extraction]
   X --> A[Aggregate records]
   A --> O
@@ -49,8 +53,8 @@ flowchart TD
   O --> C[Computation via MCP tools]
   C --> O
   O --> V[Review]
-  V -->|Corrections| O
-  V -->|Pass| D[Draft ready]
+  V -->|Pass or correction findings| O
+  O -->|Review passed| D[Draft ready]
   O -->|Escalation| H[Staff interrupt]
   H -->|Validated resolution| O
 ```

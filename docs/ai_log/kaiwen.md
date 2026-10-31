@@ -64,3 +64,12 @@ Google Doc titled Report SilverFile v2 on October 30. README now links both that
 report and the committed PDF. TASKS identifies specific stale report paragraphs without
 claiming the report or code was modified to remove the underlying technical limitations.
 The Google Doc itself was not edited.
+
+## October 31, 2026 — workflow diagram revision
+
+Codex tried the image-generation tool, rejected its inaccurate routing draft, then
+rendered the final diagram from an editable Pillow source. Labels and arrows were
+checked against graph.py and orchestration.py. README's Mermaid source was
+aligned with central routing and the revised PNG linked for readers. The overview
+is conceptual, not an automatically generated execution trace. Validation covers
+visual inspection, local links and diff whitespace; no application behavior changed.
