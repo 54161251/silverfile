@@ -107,6 +107,8 @@ def starter_inputs(uploads: list[dict] | None = None) -> dict:
         for part in parts[:-1]:
             cursor = cursor.get(part, {})
         cursor.pop(parts[-1], None)
+    for key in ("dependents", "dependents_complete", "other_amounts"):
+        inputs["intake"].pop(key, None)
     return inputs
 
 

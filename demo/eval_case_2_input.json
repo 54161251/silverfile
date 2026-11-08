@@ -4,6 +4,9 @@
     "taxpayer": {"birth_date": "1958-03-05", "ssn": "902-34-5678", "blind": false},
     "dual_status_alien": false,
     "can_be_claimed_as_dependent": false,
+    "dependents": [],
+    "other_amounts": {"26": 0},
+    "has_other_amounts": false,
     "document_inventory": ["W-2"],
     "refund": {"method": "direct_deposit", "account_owner": "unknown"}
   },

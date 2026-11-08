@@ -9,6 +9,9 @@
     "hoh_qualifying_person": true,
     "dual_status_alien": false,
     "can_be_claimed_as_dependent": false,
+    "dependents": [],
+    "other_amounts": {"26": 0},
+    "has_other_amounts": false,
     "document_inventory": [
       "W-2",
       "1099-DIV"

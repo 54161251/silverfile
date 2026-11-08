@@ -27,6 +27,7 @@ def sample(hitl=False):
     return {"intake": {"filing_status": "single",
                         "taxpayer": {"birth_date": "1955-06-01", "ssn": "901-11-1111", "blind": False},
                         "dual_status_alien": False, "can_be_claimed_as_dependent": False,
+                        "dependents": [], "other_amounts": {"26": 0}, "has_other_amounts": False,
                         "document_inventory": ["W-2"],
                         "refund": {"method": "direct_deposit", "account_owner": "unknown" if hitl else "taxpayer"}},
             "uploads": [{"doc_id": name, "form": "W-2", "boxes": {"1": amount, "2": 100},

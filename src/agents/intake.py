@@ -194,8 +194,8 @@ def wants_to_go_back(answer: str) -> bool:
 def previous_question(intake: dict, current: dict | None = None) -> dict | None:
     """The last answered question that comes before `current` in QUESTIONS."""
     last = None
-    for question in QUESTIONS:
-        if question is current:
+    for question in all_questions(intake):
+        if current is not None and field_path(question) == field_path(current):
             break
         condition = question.get("only_if")
         if condition and not condition(intake):
@@ -224,6 +224,14 @@ def out_of_scope_items(answer: str) -> list:
 
 def is_married_joint(intake: dict) -> bool:
     return intake.get("filing_status") == "mfj"
+
+def dependents_unknown(intake: dict) -> bool:
+    """Dependents were not supplied with the session, so Intake asks about them."""
+    return "dependents" not in intake
+
+
+MAX_DEPENDENTS = 4  # rows on the 1040-SR dependents table
+
 
 def refund_in_progress(intake: dict) -> bool:
     return "refund" in intake
@@ -257,8 +265,8 @@ OTHER_AMOUNTS_GATE = {
     "group": None,
     "field": "has_other_amounts",
     "text": ("Do you have any other amounts for 2025 that are not on the forms you gave us? "
-             "For example: other income, adjustments to income, extra taxes, tax credits, "
-             "or estimated tax payments you already made. Please answer yes or no."),
+             "For example: other income, adjustments to income, extra taxes or tax credits. "
+             "Please answer yes or no."),
     "parser": parse_yes_no,
 }
 
@@ -354,7 +362,15 @@ QUESTIONS = [
         "parser": parse_yes_no,
         "only_if": is_married_joint,
     },
-        {
+    {
+        "group": None,
+        "field": "has_dependents",
+        "text": "Is there anyone you can claim as a dependent? For example, a child or "
+                "relative who lives with you and whom you support. Please answer yes or no.",
+        "parser": parse_yes_no,
+        "only_if": dependents_unknown,
+    },
+    {
         "group": "refund",
         "field": "method",
         "text": "If you get a refund, would you like it by direct deposit "
@@ -372,11 +388,17 @@ QUESTIONS = [
     },
 ]
 
+# Estimated payments (line 26) are always asked; the other amount lines only after a "yes"
+# to the OTHER_AMOUNTS_GATE question.
+QUESTIONS.append({"group": "other_amounts", "field": "26", "text": AMOUNT_LINES["26"][1],
+                  "parser": parse_amount})
+QUESTIONS.append(OTHER_AMOUNTS_GATE)
 QUESTIONS.extend(
     {"group": "other_amounts", "field": line, "text": text,
      "parser": parse_amount, "only_if": has_other_amounts}
-    for line, (_label, text) in AMOUNT_LINES.items()
+    for line, (_label, text) in AMOUNT_LINES.items() if line != "26"
 )
+HAS_DEPENDENTS = next(q for q in QUESTIONS if q["field"] == "has_dependents")
 
 
 def field_path(question: dict) -> str:
@@ -415,6 +437,32 @@ def dependent_question(path: str) -> dict | None:
             "parser": parser or (lambda answer: answer.strip() or None),
             "dependent_index": index}
            
+ANOTHER_DEPENDENT = {
+    "group": None,
+    "field": "dependents_complete",
+    "text": "Thank you. Is there another dependent to add? Please answer yes or no.",
+    "parser": parse_yes_no,
+}
+
+
+def dependent_questions(intake: dict):
+    """Name, relationship and SSN for each dependent, then whether there is another one."""
+    people = intake.get("dependents") or []
+    for index in range(len(people)):
+        for field in DEPENDENT_QUESTIONS:
+            yield dependent_question(f"intake.dependents.{index}.{field}")
+    if intake.get("has_dependents") is True and 0 < len(people) < MAX_DEPENDENTS:
+        yield ANOTHER_DEPENDENT
+
+
+def all_questions(intake: dict):
+    """QUESTIONS in order, with the dependent questions right after the has_dependents one."""
+    for question in QUESTIONS:
+        yield question
+        if question is HAS_DEPENDENTS:
+            yield from dependent_questions(intake)
+
+
 def question_for_path(path: str) -> dict | None:
     """Find the question whose full field path equals `path`."""
     for question in QUESTIONS:
@@ -436,7 +484,7 @@ def next_question(intake: dict, missing: list | None = None) -> dict | None:
             question = question_for_path(path) or dependent_question(path)
         if question is not None and not _is_filled(intake, question):
             return question
-    for question in QUESTIONS:
+    for question in all_questions(intake):
         condition = question.get("only_if")
         if condition and not condition(intake):
             continue
@@ -454,21 +502,33 @@ LABELS = {
     "intake.spouse.birth_date": "your spouse's date of birth",
     "intake.spouse.ssn": "your spouse's Social Security number",
     "intake.spouse.blind": "whether your spouse is blind",
-        "intake.refund.method": "how you want your refund",
+    "intake.has_dependents": "whether you have dependents",
+    "intake.dependents_complete": "your list of dependents",
+    "intake.refund.method": "how you want your refund",
     "intake.refund.account_owner": "whose name is on the bank account",
 }
 
 LABELS.update({f"intake.other_amounts.{line}": label
                for line, (label, _text) in AMOUNT_LINES.items()})
+LABELS["intake.has_other_amounts"] = "whether you have any other amounts"
+DEPENDENT_LABELS = {"name": "name", "relationship": "relationship to you",
+                    "ssn": "Social Security number"}
+
+
+def label_for(path: str) -> str:
+    match = _re.fullmatch(r"intake\.dependents\.(\d+)\.(\w+)", path)
+    if match:
+        return f"dependent {int(match.group(1)) + 1}'s {DEPENDENT_LABELS[match.group(2)]}"
+    return LABELS[path]
 
 def build_summary(intake: dict) -> str:
     """Plain-language recap of what is already answered and what is left."""
     done, left = [], []
-    for question in QUESTIONS:
+    for question in all_questions(intake):
         condition = question.get("only_if")
         if condition and not condition(intake):
             continue
-        label = LABELS[field_path(question)]
+        label = label_for(field_path(question))
         (done if _is_filled(intake, question) else left).append(label)
     if not done:
         return ""
@@ -576,6 +636,13 @@ def handle_answer(state: dict, answer: str, turn_id: int, question: dict | None 
             return {"intake": intake, "flags": flags}
 
     value = question["parser"](answer)
+    if question["field"] == "dependents_complete" and value is not None:
+        if value:  # "yes, there is another": open a new empty dependent
+            intake = record_dependent_answer(intake, len(intake.get("dependents") or []), "name", None)
+        else:
+            intake = record_answer(intake, "dependents_complete", True)
+        return {"intake": intake, "flags": flags}
+
     if value is None:
         flags.append(make_flag("uncertain_answer", turn_id, answer))
     elif question.get("dependent_index") is not None:
@@ -586,6 +653,8 @@ def handle_answer(state: dict, answer: str, turn_id: int, question: dict | None 
     else:
         intake = record_answer(intake, question["field"], value)
 
+    if question["field"] == "has_dependents" and value is not None:
+        intake = record_answer(intake, "dependents", [{}] if value else [])
     if question["field"] == "has_other_amounts" and value is False:
         amounts = dict(intake.get("other_amounts") or {})
         for line in AMOUNT_LINES:
@@ -630,12 +699,25 @@ def with_user_inputs(state: dict, intake: dict) -> dict:
     inputs.update(intake.get("other_amounts") or {})
     return inputs
 
+UNSURE_PHRASES = ("not sure", "unsure", "don't know", "dont know", "do not know",
+                  "no idea", "complicated", "can't remember", "cannot remember")
+TRY_AGAIN = ("Sorry, I didn't quite understand that answer. Could you try once more? "
+             "You can also say \u201cI'm not sure\u201d.")
+
+
+def says_unsure(answer: str) -> bool:
+    """The taxpayer told us they do not know, which goes to a volunteer straight away."""
+    text = answer.lower().replace("\u2019", "'")
+    return any(phrase in text for phrase in UNSURE_PHRASES)
+
+
 def _run_interactive(state: dict) -> dict:
     intake = state.get("intake") or {}
     flags = list(state.get("flags") or [])
     missing = missing_paths(state)
     notice = build_summary(intake)
     target = None  # a question the user asked to revisit
+    retried = None  # the question already re-asked once after an unclear answer
 
     while True:
         question = target or next_question(intake, missing)
@@ -667,6 +749,13 @@ def _run_interactive(state: dict) -> dict:
         )
         intake, flags = result["intake"], result["flags"]
         new = {f["type"] for f in flags[before:]}
+
+        if new == {"uncertain_answer"} and not says_unsure(reply["answer"]) \
+                and retried != field_path(question):
+            # Probably a typo or an unexpected wording: ask again once before involving staff.
+            flags = flags[:before]
+            retried, target, notice = field_path(question), question, TRY_AGAIN
+            continue
 
         if "advice_request" in new:
             notice = ESCALATION_CATALOG["E4"]["user_message"]
